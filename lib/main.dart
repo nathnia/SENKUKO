@@ -4,6 +4,9 @@ import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/routes/pages.dart';
 import 'package:senkuko/routes/routes.dart';
 
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
