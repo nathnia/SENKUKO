@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:senkuko/core/app_colors.dart';
-import 'package:senkuko/routes/pages.dart';
-import 'package:senkuko/routes/routes.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:senkuko/core/app_theme.dart';
+import 'package:senkuko/features/auth/login/views/login_page.dart';
+import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  await GetStorage.init();
+
+  Get.put(CartController());
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-   return GetMaterialApp(
-      title: 'Senkuko',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-        useMaterial3: true,
-      ),
-      initialRoute: AppRoutes.splash,
-      getPages: AppPages.pages,
+    return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: LoginPage(),
     );
   }
 }
