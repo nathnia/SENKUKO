@@ -83,18 +83,20 @@ class CartController extends GetxController {
     int price,
     String variantId,
     String priceListId,
-    String? imageUrl,
-  ) {
+    String? imageUrl, {
+    int qty = 1,
+  }) {
     int index = items.indexWhere((item) => item.variantId == variantId);
 
     if (index != -1) {
-      items[index].qty++;
+      items[index].qty += qty;
     } else {
       items.add(
         CartItem(
           id: id,
           name: name,
           price: price,
+          qty: qty,
           variantId: variantId,
           priceListId: priceListId,
           imageUrl: imageUrl,
@@ -124,6 +126,14 @@ class CartController extends GetxController {
     items.refresh();
     saveCart();
   }
+
+  // HAPUS ITEM
+void removeItem(int index) {
+  items.removeAt(index);
+
+  items.refresh();
+  saveCart();
+}
 
   // CHECK / UNCHECK
   void toggleItem(int index) {

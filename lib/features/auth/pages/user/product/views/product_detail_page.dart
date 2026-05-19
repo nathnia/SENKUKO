@@ -354,6 +354,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
                             ),
                             child: const Text("Checkout"),
                           ),

@@ -13,10 +13,7 @@ class CartPage extends StatelessWidget {
   CartPage({super.key});
 
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => "${m[1]}.",
-    )}";
+    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
   }
 
   @override
@@ -34,14 +31,11 @@ class CartPage extends StatelessWidget {
 
       body: Obx(() {
         if (cart.items.isEmpty) {
-          return const Center(
-            child: Text("Keranjang kosong"),
-          );
+          return const Center(child: Text("Keranjang kosong"));
         }
 
         return Column(
           children: [
-
             // SELECT ALL
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -56,9 +50,7 @@ class CartPage extends StatelessWidget {
                   ),
                   const Text(
                     "Pilih Semua",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -79,7 +71,6 @@ class CartPage extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         // CHECKBOX
                         Checkbox(
                           value: item.selected,
@@ -92,8 +83,8 @@ class CartPage extends StatelessWidget {
                         // IMAGE
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: item.imageUrl != null &&
-                                  item.imageUrl!.isNotEmpty
+                          child:
+                              item.imageUrl != null && item.imageUrl!.isNotEmpty
                               ? Image.network(
                                   item.imageUrl!,
                                   width: 75,
@@ -115,10 +106,8 @@ class CartPage extends StatelessWidget {
                           child: SizedBox(
                             height: 75,
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-
                                 Text(
                                   item.name,
                                   maxLines: 2,
@@ -147,6 +136,85 @@ class CartPage extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      // DELETE
+                                      InkWell(
+                                        onTap: () {
+                                          Get.dialog(
+                                            AlertDialog(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+
+                                              title: const Text("Hapus Produk"),
+
+                                              content: Text(
+                                                "Yakin ingin menghapus ${item.name} dari keranjang?",
+                                              ),
+
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Get.back();
+                                                  },
+
+                                                  child: const Text(
+                                                    "Batal",
+                                                    style: TextStyle(
+                                                      color: AppColors
+                                                          .textSecondary,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            AppColors.error,
+                                                      ),
+
+                                                  onPressed: () {
+                                                    cart.removeItem(index);
+
+                                                    Get.back();
+
+                                                    Get.snackbar(
+                                                      "Berhasil",
+                                                      "Produk dihapus",
+                                                      snackPosition:
+                                                          SnackPosition.BOTTOM,
+                                                    );
+                                                  },
+
+                                                  child: const Text(
+                                                    "Hapus",
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+
+                                        borderRadius: BorderRadius.circular(8),
+
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 10,
+                                          ),
+
+                                          child: Icon(
+                                            Icons.delete_outline,
+                                            color: AppColors.error,
+                                            size: 22,
+                                          ),
+                                        ),
+                                      ),
 
                                       qtyButton(
                                         Icons.remove,
@@ -154,8 +222,7 @@ class CartPage extends StatelessWidget {
                                       ),
 
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                           horizontal: 10,
                                         ),
                                         child: Text(
@@ -189,28 +256,16 @@ class CartPage extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                  ),
-                ],
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
               ),
 
               child: Column(
                 children: [
-
                   Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Total",
-                        style: TextStyle(fontSize: 15),
-                      ),
+                      const Text("Total", style: TextStyle(fontSize: 15)),
 
                       Text(
                         formatRupiah(cart.totalPrice),
@@ -236,8 +291,7 @@ class CartPage extends StatelessWidget {
                           : () {
                               Get.to(
                                 () => CheckoutPage(
-                                  directItems:
-                                      cart.selectedItems,
+                                  directItems: cart.selectedItems,
                                   isFromCart: true,
                                 ),
                                 binding: CheckoutBinding(),
