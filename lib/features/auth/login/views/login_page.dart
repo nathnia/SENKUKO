@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/features/auth/pages/user/main/views/main_page.dart';
 
 class LoginPage extends StatelessWidget {
@@ -13,11 +14,7 @@ class LoginPage extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.only(top: 60, bottom: 30),
-            child: const Icon(
-              Icons.storefront,
-              size: 70,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.storefront, size: 70, color: Colors.white),
           ),
 
           Expanded(
@@ -25,13 +22,10 @@ class LoginPage extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(30),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
               child: Column(
                 children: [
-
                   const SizedBox(height: 20),
 
                   const Text(
@@ -72,9 +66,24 @@ class LoginPage extends StatelessWidget {
 
                   Align(
                     alignment: Alignment.centerRight,
+
                     child: TextButton(
                       onPressed: () {},
-                      child: const Text("Lupa Password?"),
+
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        foregroundColor: AppColors.textPrimary,
+                      ),
+
+                      child: const Text(
+                        "Lupa Password?",
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ),
 
@@ -85,7 +94,8 @@ class LoginPage extends StatelessWidget {
                     height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
                       ),
                       onPressed: () {
                         Get.offAll(() => const MainPage());
