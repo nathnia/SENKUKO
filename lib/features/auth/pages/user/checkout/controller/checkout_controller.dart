@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:senkuko/features/auth/pages/user/product/services/transaction_service.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../cart/controller/cart_controller.dart';
+import '../../product/services/transaction_service.dart';
 
 class CheckoutController extends GetxController {
   final cart = Get.find<CartController>();
+
+  final box = GetStorage();
 
   final addressController = TextEditingController();
   final cityController = TextEditingController();
@@ -14,11 +19,27 @@ class CheckoutController extends GetxController {
 
   var paymentMethod = "cod".obs;
 
-final methods = [
-  {"label": "COD", "value": "cod"},
-  {"label": "Transfer Bank", "value": "bank_transfer"},
-  {"label": "QRIS", "value": "qris"},
-];
+  final methods = [
+    {"label": "COD", "value": "cod"},
+    {"label": "Transfer Bank", "value": "bank_transfer"},
+    {"label": "QRIS", "value": "qris"},
+    {"label": "GoPay", "value": "gopay"},
+    {"label": "ShopeePay", "value": "shopeepay"},
+  ];
+
+  @override
+  void onInit() {
+    super.onInit();
+
+    final user = box.read("user");
+
+    if (user != null) {
+      addressController.text = user["address"] ?? "";
+      cityController.text = user["city"] ?? "";
+      regionController.text = user["region"] ?? "";
+      subregionController.text = user["subregion"] ?? "";
+    }
+  }
 
   void changeMethod(String method) {
     paymentMethod.value = method;
@@ -29,29 +50,13 @@ final methods = [
     required List<CartItem> items,
   }) async {
     if (items.isEmpty) {
-      Get.snackbar(
-        "Error",
-        "Tidak ada produk",
-      );
+      Get.snackbar("Error", "Tidak ada produk");
       return;
     }
 
-    if (addressController.text.isEmpty ||
-        cityController.text.isEmpty ||
-        regionController.text.isEmpty ||
-        subregionController.text.isEmpty) {
-      Get.snackbar(
-        "Alamat Belum Lengkap",
-        "Mohon isi alamat pengiriman",
-      );
-      return;
-    }
-
-    final success =
-        await TransactionService.createTransaction(
+    final result = await TransactionService.createTransaction(
       items: items,
       paymentMethod: paymentMethod.value,
-
       address: addressController.text,
       city: cityController.text,
       region: regionController.text,
@@ -59,18 +64,58 @@ final methods = [
       note: noteController.text,
     );
 
-    if (success) {
-      if (fromCart) {
-        cart.removeSelectedItems();
-      }
-
-      Get.offAllNamed('/order-success');
-    } else {
-      Get.snackbar(
-        "Error",
-        "Gagal membuat transaksi",
-      );
+    if (result == null) {
+      Get.snackbar("Checkout Gagal", "Terjadi kesalahan");
+      return;
     }
+
+    if (fromCart) {
+      cart.removeSelectedItems();
+    }
+
+    // ==========================
+    // COD
+    // ==========================
+    if (result["payment_method"] == "cod") {
+      Get.offAllNamed(
+        "/order-success",
+        arguments: {
+          "invoice": result["invoice_number"],
+          "total": result["grand_total"],
+          "status": result["status"],
+        },
+      );
+
+      return;
+    }
+
+    // ==========================
+    // MIDTRANS
+    // ==========================
+    final redirectUrl = result["redirect_url"];
+
+if (redirectUrl != null) {
+  final uri = Uri.parse(redirectUrl);
+
+  await launchUrl(
+    uri,
+    mode: LaunchMode.externalApplication,
+  );
+
+  Get.defaultDialog(
+    title: "Pembayaran Dibuat",
+    middleText:
+        "Silakan selesaikan pembayaran di Midtrans. Setelah pembayaran berhasil, cek status pesanan pada halaman Riwayat Pesanan.",
+    textConfirm: "Lihat Riwayat",
+    textCancel: "Nanti",
+    onConfirm: () {
+      Get.back();
+      Get.offAllNamed("/history");
+    },
+  );
+
+  return;
+}
   }
 
   @override
@@ -80,6 +125,7 @@ final methods = [
     regionController.dispose();
     subregionController.dispose();
     noteController.dispose();
+
     super.onClose();
   }
 }
