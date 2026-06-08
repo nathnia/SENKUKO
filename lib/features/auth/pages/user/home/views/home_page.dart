@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_card.dart';
 import 'package:senkuko/core/widgets/app_section_title.dart';
@@ -11,6 +12,7 @@ import 'package:senkuko/features/auth/pages/user/product/views/product_detail_pa
 import 'package:senkuko/features/auth/pages/user/product/views/product_list_page.dart';
 import 'package:senkuko/features/auth/pages/user/promo/views/promo_page.dart';
 
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -19,8 +21,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+  final box = GetStorage();
+
+  String get memberName {
+    final user = box.read("user");
+
+    if (user == null) return "Member";
+
+    return user["name"] ?? "Member";
+  }
+
   final PageController controller = PageController();
-  final TextEditingController searchController = TextEditingController();
+
+  final TextEditingController searchController =
+      TextEditingController();
 
   int currentPage = 0;
 
@@ -135,29 +150,62 @@ class _HomePageState extends State<HomePage> {
                   bottom: Radius.circular(26),
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 42,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: AppTextField(
-                        controller: searchController,
-                        hint: "Cari produk...",
-                        icon: Icons.search,
-                        onChanged: searchProduct,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.notifications, color: Colors.white),
-                ],
-              ),
+              child: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text(
+      "Halo, $memberName 👋",
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+
+    const SizedBox(height: 4),
+
+    const Text(
+      "Selamat datang di Senkuko",
+      style: TextStyle(
+        color: Colors.white70,
+        fontSize: 13,
+      ),
+    ),
+
+    const SizedBox(height: 14),
+
+    Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
             ),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: AppTextField(
+              controller: searchController,
+              hint: "Cari produk...",
+              icon: Icons.search,
+              onChanged: searchProduct,
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        const Icon(
+          Icons.notifications,
+          color: Colors.white,
+        ),
+      ],
+    ),
+  ],
+),
+              ),
 
             Expanded(
               child: isLoading

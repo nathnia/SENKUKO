@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+
 import 'package:senkuko/core/app_theme.dart';
 import 'package:senkuko/features/auth/login/views/login_page.dart';
 import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
+import 'package:senkuko/features/auth/pages/user/main/views/main_page.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,9 +22,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final box = GetStorage();
+
+    final token = box.read("token");
+
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(),
+      theme: AppTheme.lightTheme,
+
+      home: token != null
+          ? const MainPage()
+          : LoginPage(),
     );
   }
 }
