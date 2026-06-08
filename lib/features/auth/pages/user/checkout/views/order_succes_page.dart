@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:senkuko/features/auth/pages/user/main/views/main_page.dart';
+import 'package:senkuko/routes/pages.dart';
 
 class OrderSuccessPage extends StatelessWidget {
   const OrderSuccessPage({super.key});
@@ -12,7 +14,6 @@ class OrderSuccessPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-
             const Spacer(),
 
             //ICON SUCCESS
@@ -35,10 +36,7 @@ class OrderSuccessPage extends StatelessWidget {
             //TEXT
             const Text(
               "Pesanan Berhasil!",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
@@ -55,16 +53,13 @@ class OrderSuccessPage extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-
                   // KE HOME
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        Get.offAllNamed('/home'); 
-                        // atau:
-                        // Get.offAll(() => HomePage());
+                        Get.offAllNamed(AppPages.home);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -81,15 +76,15 @@ class OrderSuccessPage extends StatelessWidget {
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        // nanti bisa ke order history
-                        Get.back();
+                        MainPage.to.changeTab(2);
+                        Get.offAllNamed(AppPages.history);
                       },
                       child: const Text("Lihat Pesanan"),
                     ),
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

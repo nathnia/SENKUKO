@@ -6,113 +6,171 @@ class TransactionService {
   static const String baseUrl =
       "https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev";
 
-  //GET TRANSACTIONS (ORDER HISTORY)
+  // HISTORY TRANSACTION CUSTOMER
+  // GET /api/transactions/history
   static Future<List<dynamic>> getTransactions() async {
     try {
+      final box = GetStorage();
+      final token = box.read("token");
+
       final response = await http.get(
-        Uri.parse("$baseUrl/api/transactions"),
-        headers: {"Content-Type": "application/json"},
+        Uri.parse("$baseUrl/api/transactions/history"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
       );
 
-      print("🔥 GET TRANSACTIONS STATUS: ${response.statusCode}");
-      print("🔥 RESPONSE: ${response.body}");
+      print("🔥 HISTORY STATUS: ${response.statusCode}");
+      print("🔥 HISTORY BODY: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         if (data["success"] == true) {
-          return data["data"]; // 🔥 list transaksi
-        } else {
-          throw Exception("Gagal ambil transaksi");
+          return data["data"] ?? [];
         }
-      } else {
-        throw Exception("Server error: ${response.statusCode}");
       }
+
+      return [];
     } catch (e) {
-      print("🔥 ERROR GET TRANSACTIONS: $e");
+      print("🔥 ERROR HISTORY:");
+      print(e);
       return [];
     }
   }
 
-  //CREATE TRANSACTION (BIAR SEKALIAN RAPi)
-  static Future<bool> createTransaction({
-  required List<dynamic> items,
-  required String paymentMethod,
-  required String address,
-  required String city,
-  required String region,
-  required String subregion,
-  String note = "",
-}) async {
-  try {
-    final box = GetStorage();
+  // DETAIL TRANSACTION
+  // GET /api/transactions/:id
+  static Future<Map<String, dynamic>?> getTransactionDetail(
+    String transactionId,
+  ) async {
+    try {
+      final box = GetStorage();
+      final token = box.read("token");
 
-    final token = box.read("token");
-    final user = box.read("user");
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/transactions/$transactionId"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
 
-    print("========== DEBUG TRANSACTION ==========");
-    print("TOKEN TYPE = ${token.runtimeType}");
-    print("TOKEN VALUE = $token");
-    print("USER DATA = $user");
-    print("AUTH HEADER = Bearer $token");
-    print("======================================");
-    print("========== ITEM DEBUG ==========");
+      print("========== DETAIL TRANSACTION ==========");
+      print("STATUS = ${response.statusCode}");
+      print("BODY = ${response.body}");
+      print("=======================================");
 
-for (final item in items) {
-  print(
-    "NAME=${item.name}"
-    " | VARIANT=${item.variantId}"
-    " | PRICE_LIST=${item.priceListId}"
-    " | QTY=${item.qty}",
-  );
-}
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-print("===============================");
+        if (data["success"] == true) {
+          return data["data"];
+        }
+      }
 
-    final body = {
-      "price_list_id": items.first.priceListId,
-      "payment_method": paymentMethod.toLowerCase(),
-      "delivery_address": address,
-      "delivery_city": city,
-      "delivery_region": region,
-      "delivery_subregion": subregion,
-      "delivery_note": note,
-      "items": items.map((e) {
-        return {
-          "product_variant_id": e.variantId,
-          "qty": e.qty,
-        };
-      }).toList(),
-    };
-
-    print("REQUEST BODY:");
-    print(json.encode(body));
-
-    final response = await http.post(
-      Uri.parse("$baseUrl/api/transactions"),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: json.encode(body),
-    );
-
-    print("========== RESPONSE ==========");
-    print("STATUS CODE = ${response.statusCode}");
-    print("BODY = ${response.body}");
-    print("==============================");
-
-    if (response.statusCode == 200 ||
-        response.statusCode == 201) {
-      final data = json.decode(response.body);
-      return data["success"] == true;
+      return null;
+    } catch (e) {
+      print("ERROR DETAIL TRANSACTION:");
+      print(e);
+      return null;
     }
-
-    return false;
-  } catch (e) {
-    print("ERROR CREATE TRANSACTION:");
-    print(e);
-    return false;
   }
-}
+
+  // CREATE TRANSACTION
+  // POST /api/transactions
+  static Future<Map<String, dynamic>?> createTransaction({
+    required List<dynamic> items,
+    required String paymentMethod,
+    required String address,
+    required String city,
+    required String region,
+    required String subregion,
+    String note = "",
+  }) async {
+    try {
+      final box = GetStorage();
+
+      final token = box.read("token");
+      final user = box.read("user");
+
+      print("========== DEBUG TRANSACTION ==========");
+      print("TOKEN TYPE = ${token.runtimeType}");
+      print("TOKEN VALUE = $token");
+      print("USER DATA = $user");
+      print("AUTH HEADER = Bearer $token");
+      print("======================================");
+
+      print("========== ITEM DEBUG ==========");
+
+      for (final item in items) {
+        print(
+          "NAME=${item.name}"
+          " | VARIANT=${item.variantId}"
+          " | PRICE_LIST=${item.priceListId}"
+          " | QTY=${item.qty}",
+        );
+      }
+
+      print("===============================");
+
+      final body = {
+        "price_list_id": items.first.priceListId,
+        "payment_method": paymentMethod.toLowerCase(),
+        "delivery_address": address,
+        "delivery_city": city,
+        "delivery_region": region,
+        "delivery_subregion": subregion,
+        "delivery_note": note,
+        "items": items.map((e) {
+          return {
+            "product_variant_id": e.variantId,
+            "qty": e.qty,
+          };
+        }).toList(),
+      };
+
+      for (final item in items) {
+        print(
+          "ITEM => ${item.name}"
+          " | VARIANT=${item.variantId}"
+          " | PRICE_LIST=${item.priceListId}"
+          " | QTY=${item.qty}",
+        );
+      }
+
+      print("REQUEST BODY:");
+      print(json.encode(body));
+
+      final response = await http.post(
+        Uri.parse("$baseUrl/api/transactions"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: json.encode(body),
+      );
+
+      print("========== RESPONSE ==========");
+      print("STATUS CODE = ${response.statusCode}");
+      print("BODY = ${response.body}");
+      print("==============================");
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201) {
+        final data = json.decode(response.body);
+
+        if (data["success"] == true) {
+          return data["data"];
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print("ERROR CREATE TRANSACTION:");
+      print(e);
+      return null;
+    }
+  }
 }

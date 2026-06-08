@@ -66,7 +66,7 @@ class ProductCombinedService {
     normalPrice['product_variant_id']?.toString() ?? "";
 
 final priceListId =
-    normalPrice['id']?.toString() ?? ""; 
+    normalPrice['price_list_id']?.toString() ?? "";
 
 final variantName =
     normalPrice['product_variant_name']?.toString() ?? "-";
