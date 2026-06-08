@@ -9,7 +9,7 @@ class AppPages {
   static const orderSuccess = '/order-success';
 
   static Map<String, WidgetBuilder> pages = {
-    login: (context) => const LoginPage(),
+    login: (context) => LoginPage(),
     home: (context) => const HomePage(),
     orderSuccess: (context) => const OrderSuccessPage(),
   };

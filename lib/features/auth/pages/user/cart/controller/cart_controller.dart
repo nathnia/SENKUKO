@@ -144,13 +144,13 @@ void removeItem(int index) {
 
   // SELECT ALL
   void toggleAll(bool value) {
-    for (var item in items) {
-      print("VARIANT ID: ${item.variantId}");
-    }
-
-    items.refresh();
-    saveCart();
+  for (var item in items) {
+    item.selected = value;
   }
+
+  items.refresh();
+  saveCart();
+}
 
   // AMBIL ITEM TERPILIH
   List<CartItem> get selectedItems {

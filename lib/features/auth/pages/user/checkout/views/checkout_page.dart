@@ -10,17 +10,10 @@ class CheckoutPage extends StatelessWidget {
   final List<CartItem>? directItems;
   final bool isFromCart;
 
-  const CheckoutPage({
-    super.key,
-    this.directItems,
-    this.isFromCart = false,
-  });
+  const CheckoutPage({super.key, this.directItems, this.isFromCart = false});
 
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => "${m[1]}.",
-    )}";
+    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
   }
 
   @override
@@ -30,10 +23,7 @@ class CheckoutPage extends StatelessWidget {
 
     final items = directItems ?? cart.selectedItems;
 
-    final int total = items.fold(
-      0,
-      (sum, item) => sum + item.price * item.qty,
-    );
+    final int total = items.fold(0, (sum, item) => sum + item.price * item.qty);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -47,286 +37,230 @@ class CheckoutPage extends StatelessWidget {
       ),
 
       body: Column(
-        children: [
-
-          Expanded(
-            child: SingleChildScrollView(
+  children: [
+    Expanded(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            // ALAMAT
+            AppCard(
               child: Column(
                 children: [
-
-                  const SizedBox(height: 12),
-
-                  // ADDRESS
-                  AppCard(
-                    child: Row(
-                      children: [
-
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary
-                                .withOpacity(0.1),
-                            borderRadius:
-                                BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.location_on,
-                            color: AppColors.primary,
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-
-                              Text(
-                                "Alamat Pengiriman",
-                                style: TextStyle(
-                                  color:
-                                      AppColors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-
-                              SizedBox(height: 4),
-
-                              Text(
-                                "Jl. Contoh No.123, Kota, Provinsi",
-                                style: TextStyle(
-                                  fontWeight:
-                                      FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            "Ganti",
-                            style: TextStyle(
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
+                  TextField(
+                    controller: checkout.addressController,
+                    decoration: const InputDecoration(
+                      labelText: "Alamat",
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  // PRODUK
-                  AppCard(
-                    child: Column(
-                      children: items.map((item) {
-                        return Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: 14),
-
-                          child: Row(
-                            children: [
-
-                              // IMAGE
-                              ClipRRect(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-
-                                child: item.imageUrl != null &&
-                                        item.imageUrl!
-                                            .isNotEmpty
-                                    ? Image.network(
-                                        item.imageUrl!,
-                                        width: 70,
-                                        height: 70,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Container(
-                                        width: 70,
-                                        height: 70,
-                                        color:
-                                            AppColors.border,
-                                        child: const Icon(
-                                            Icons.image),
-                                      ),
-                              ),
-
-                              const SizedBox(width: 12),
-
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
-                                  children: [
-
-                                    Text(
-                                      item.name,
-                                      maxLines: 2,
-                                      overflow:
-                                          TextOverflow
-                                              .ellipsis,
-                                      style:
-                                          const TextStyle(
-                                        fontWeight:
-                                            FontWeight.w600,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 6),
-
-                                    Text(
-                                      formatRupiah(
-                                          item.price),
-                                      style:
-                                          const TextStyle(
-                                        color: AppColors
-                                            .primary,
-                                        fontWeight:
-                                            FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              Text(
-                                "x${item.qty}",
-                                style: const TextStyle(
-                                  fontWeight:
-                                      FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                  TextField(
+                    controller: checkout.cityController,
+                    decoration: const InputDecoration(
+                      labelText: "Kota",
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  // TOTAL
-                  AppCard(
-                    child: Column(
-                      children: [
-
-                        rowHarga("Subtotal", total),
-
-                        const SizedBox(height: 8),
-
-                        rowHarga("Ongkir", 0),
-
-                        const SizedBox(height: 8),
-
-                        rowHarga("Diskon", 0),
-
-                        const Divider(height: 24),
-
-                        rowHarga(
-                          "Total",
-                          total,
-                          isTotal: true,
-                        ),
-                      ],
+                  TextField(
+                    controller: checkout.regionController,
+                    decoration: const InputDecoration(
+                      labelText: "Kecamatan",
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
+
+                  TextField(
+                    controller: checkout.subregionController,
+                    decoration: const InputDecoration(
+                      labelText: "Kelurahan",
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  TextField(
+                    controller: checkout.noteController,
+                    decoration: const InputDecoration(
+                      labelText: "Catatan",
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
 
-          // BOTTOM
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                ),
-              ],
-            ),
+            const SizedBox(height: 10),
 
-            child: Row(
-              children: [
+            // PRODUK
+            AppCard(
+              child: Column(
+                children: items.map((item) {
+                  return ListTile(
+                    leading:
+                        item.imageUrl != null &&
+                            item.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            item.imageUrl!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          )
+                        : const Icon(Icons.image),
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
+                    title: Text(item.name),
 
-                      const Text("Total"),
-
-                      Text(
-                        formatRupiah(total),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: AppButton(
-                      text: "Buat Pesanan",
-                      onPressed: () {
-                        checkout.checkout(
-                          fromCart: isFromCart,
-                          items: items,
-                        );
-                      },
+                    subtitle: Text(
+                      formatRupiah(item.price),
                     ),
-                  ),
-                ),
-              ],
+
+                    trailing: Text("x${item.qty}"),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 10),
+
+            // TOTAL
+            AppCard(
+              child: Column(
+                children: [
+                  rowHarga("Subtotal", total),
+                  const SizedBox(height: 8),
+                  rowHarga("Ongkir", 0),
+                  const SizedBox(height: 8),
+                  rowHarga("Diskon", 0),
+                  const Divider(),
+                  rowHarga(
+                    "Total",
+                    total,
+                    isTotal: true,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // METODE PEMBAYARAN
+            AppCard(
+              child: Obx(
+                () => Column(
+                  children:
+                      checkout.methods.map((method) {
+                        return RadioListTile<String>(
+                          title: Text(
+                            method["label"]!,
+                          ),
+
+                          value:
+                              method["value"]!,
+
+                          groupValue:
+                              checkout
+                                  .paymentMethod
+                                  .value,
+
+                          onChanged: (value) {
+                            checkout.changeMethod(
+                              value!,
+                            );
+                          },
+                        );
+                      }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+    ),
+
+    Container(
+      padding: const EdgeInsets.all(16),
+
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+
+        child: AppButton(
+          text: "Buat Pesanan",
+
+          onPressed: () {
+            checkout.checkout(
+              fromCart: isFromCart,
+              items: items,
+            );
+          },
+        ),
+      ),
+    ),
+  ],
+),
     );
   }
 
-  Widget rowHarga(
-    String title,
-    int value, {
-    bool isTotal = false,
-  }) {
+  Widget rowHarga(String label, int price, {bool isTotal = false}) {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-
-        Text(title),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 18 : 16,
+            fontWeight:
+                isTotal ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
 
         Text(
-          "Rp $value",
+          formatRupiah(price),
           style: TextStyle(
-            fontWeight: isTotal
-                ? FontWeight.bold
-                : FontWeight.normal,
-            color: isTotal
-                ? AppColors.primary
-                : Colors.black,
+            fontSize: isTotal ? 18 : 16,
+            fontWeight:
+                isTotal ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ],
     );
+  }
+
+  void showSuccessDialog() {
+    Get.dialog(
+      AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.green,
+              size: 80,
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text(
+              "Pesanan Berhasil Dibuat",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.offAllNamed('/home');
+            },
+            child: const Text("Kembali ke Beranda"),
+          ),
+        ],
+      ),
+    );        
   }
 }
