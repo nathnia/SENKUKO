@@ -6,7 +6,7 @@ class ProductCombinedService {
   static const baseUrl =
       'https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev/api';
 
-  static Future<List<ProductUI>> getAllProducts() async {
+  static Future<List> getAllProducts() async {
     try {
       final productRes = await http.get(
         Uri.parse('$baseUrl/products'),
@@ -29,69 +29,100 @@ class ProductCombinedService {
       final List products = productJson['data'] ?? [];
       final List prices = priceJson['data'] ?? [];
 
+      print("========== PRICE DEBUG ==========");
+      print(jsonEncode(prices.take(10).toList()));
+      print("================================");
+
       List<ProductUI> result = [];
 
       for (var product in products) {
-        final productName =
-            product['name']?.toString().toLowerCase() ?? '';
+        final productName = product['name']?.toString().toLowerCase() ?? '';
 
-        //MATCH VARIANT BERDASARKAN NAMA
         final relatedPrices = prices.where((p) {
           final variantName =
               p['product_variant_name']?.toString().toLowerCase() ?? '';
+
           return variantName.startsWith(productName);
         }).toList();
 
         if (relatedPrices.isEmpty) continue;
 
-        //SORT BIAR DAPAT VARIANT PALING "UTAMA"
         relatedPrices.sort((a, b) {
           final aName = a['product_variant_name']?.toString() ?? '';
+
           final bName = b['product_variant_name']?.toString() ?? '';
+
           return aName.length.compareTo(bName.length);
         });
 
-        //AMBIL HARGA NORMAL
-        final normalPrice = relatedPrices.firstWhere(
+        final normal = relatedPrices.firstWhere(
           (p) => p['price_list_code'] == 'NORMAL',
           orElse: () => relatedPrices.first,
         );
 
-        final price = int.tryParse(
-              normalPrice['price']?.toString().split('.').first ?? '0',
-            ) ??
-            0;
+        final member = relatedPrices.firstWhere(
+          (p) => p['price_list_code'] == 'MEMBER',
+          orElse: () => normal,
+        );
 
-        final variantId =
-    normalPrice['product_variant_id']?.toString() ?? "";
+        final grosir = relatedPrices.firstWhere(
+          (p) => p['price_list_code'] == 'GROSIR',
+          orElse: () => normal,
+        );
 
-final priceListId =
-    normalPrice['price_list_id']?.toString() ?? "";
+        final normalPrice =
+            int.tryParse(normal['price'].toString().split('.').first) ?? 0;
 
-final variantName =
-    normalPrice['product_variant_name']?.toString() ?? "-";
+        final memberPrice =
+            int.tryParse(member['price'].toString().split('.').first) ??
+            normalPrice;
 
-        //IMAGE AMAN
+        final grosirPrice =
+            int.tryParse(grosir['price'].toString().split('.').first) ??
+            normalPrice;
+
+        final variantId = normal['product_variant_id']?.toString() ?? '';
+        final normalPriceListId = normal['price_list_id']?.toString() ?? '';
+
+        final memberPriceListId = member['price_list_id']?.toString() ?? '';
+
+        final grosirPriceListId = grosir['price_list_id']?.toString() ?? '';
+        final grosirMinQty =
+            int.tryParse(grosir['min_qty']?.toString() ?? '24') ?? 24;
+        // =========================
+        // IMAGE
+        // =========================
+
         String imageUrl = "";
+
         if (product['images'] != null &&
             product['images'] is List &&
             product['images'].isNotEmpty) {
-          imageUrl =
-              product['images'][0]['url']?.toString() ?? "";
+          imageUrl = product['images'][0]['url']?.toString() ?? "";
         }
 
         result.add(
-  ProductUI(
-    id: product['id']?.toString() ?? '',
-    name: product['name']?.toString() ?? '',
-    category: _normalizeCategory(product['category_name']),
-    variantName: variantName,
-    price: price,
-    imageUrl: imageUrl,
-    variantId: variantId,
-    priceListId: priceListId, //WAJIB
-  ),
-);
+          ProductUI(
+            id: product['id']?.toString() ?? '',
+            name: product['name']?.toString() ?? '',
+            category: _normalizeCategory(product['category_name']),
+            variantName: variantName,
+
+            normalPrice: normalPrice,
+            memberPrice: memberPrice,
+            grosirPrice: grosirPrice,
+
+            variantId: variantId,
+
+            normalPriceListId: normalPriceListId,
+            memberPriceListId: memberPriceListId,
+            grosirPriceListId: grosirPriceListId,
+
+            grosirMinQty: grosirMinQty,
+
+            imageUrl: imageUrl,
+          ),
+        );
       }
 
       print("✅ TOTAL PRODUK: ${result.length}");
@@ -102,13 +133,10 @@ final variantName =
     }
   }
 
-  //FIX FINAL (ANTI ERROR)
   static String _normalizeCategory(dynamic raw) {
     final c = raw?.toString().toLowerCase() ?? '';
 
-    if (c.contains("makanan") || c.contains("minuman")) {
-      return "makanan & minuman";
-    } else if (c.contains("snack")) {
+    if (c.contains("makanan") || c.contains("minuman") || c.contains("snack")) {
       return "makanan & minuman";
     }
 

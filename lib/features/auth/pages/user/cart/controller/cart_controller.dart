@@ -86,7 +86,11 @@ class CartController extends GetxController {
     String? imageUrl, {
     int qty = 1,
   }) {
-    int index = items.indexWhere((item) => item.variantId == variantId);
+    int index = items.indexWhere(
+  (item) =>
+      item.variantId == variantId &&
+      item.priceListId == priceListId,
+);
 
     if (index != -1) {
       items[index].qty += qty;

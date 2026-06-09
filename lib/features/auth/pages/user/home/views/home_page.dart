@@ -12,7 +12,6 @@ import 'package:senkuko/features/auth/pages/user/product/views/product_detail_pa
 import 'package:senkuko/features/auth/pages/user/product/views/product_list_page.dart';
 import 'package:senkuko/features/auth/pages/user/promo/views/promo_page.dart';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -21,7 +20,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   final box = GetStorage();
 
   String get memberName {
@@ -34,8 +32,7 @@ class _HomePageState extends State<HomePage> {
 
   final PageController controller = PageController();
 
-  final TextEditingController searchController =
-      TextEditingController();
+  final TextEditingController searchController = TextEditingController();
 
   int currentPage = 0;
 
@@ -146,66 +143,65 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               decoration: const BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(26),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
               ),
               child: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text(
-      "Halo, $memberName 👋",
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Halo, $memberName 👋",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
 
-    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-    const Text(
-      "Selamat datang di Senkuko",
-      style: TextStyle(
-        color: Colors.white70,
-        fontSize: 13,
-      ),
-    ),
+                  const SizedBox(height: 14),
 
-    const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: AppTextField(
+                            controller: searchController,
+                            hint: "Cari produk...",
+                            icon: Icons.search,
+                            onChanged: searchProduct,
+                          ),
+                        ),
+                      ),
 
-    Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 42,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: AppTextField(
-              controller: searchController,
-              hint: "Cari produk...",
-              icon: Icons.search,
-              onChanged: searchProduct,
-            ),
-          ),
-        ),
+                      const SizedBox(width: 10),
 
-        const SizedBox(width: 10),
-
-        const Icon(
-          Icons.notifications,
-          color: Colors.white,
-        ),
-      ],
-    ),
-  ],
-),
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.15),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
 
             Expanded(
               child: isLoading
@@ -375,17 +371,17 @@ class _HomePageState extends State<HomePage> {
       },
 
       child: Container(
-        width: 128,
-        margin: const EdgeInsets.only(right: 10),
+        width: 145,
+        margin: const EdgeInsets.only(right: 12),
 
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -394,47 +390,47 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // IMAGE
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+            Container(
+              height: 110,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
               ),
-
               child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      product.imageUrl!,
-                      height: 110,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Image.network(
+                        product.imageUrl!,
+                        height: 80,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                      ),
                     )
                   : Container(
-                      height: 110,
-                      width: double.infinity,
-                      color: Colors.grey[200],
-
-                      child: const Center(
-                        child: Icon(Icons.image, size: 32, color: Colors.grey),
-                      ),
+                      height: 95,
+                      color: Colors.grey.shade100,
+                      child: const Center(child: Icon(Icons.image)),
                     ),
             ),
 
-            // CONTENT
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                padding: const EdgeInsets.all(10),
 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
                     Text(
                       product.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         height: 1.3,
-                        color: AppColors.textPrimary,
                       ),
                     ),
 
@@ -444,10 +440,9 @@ class _HomePageState extends State<HomePage> {
                       product.variantName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary,
+                        color: Colors.grey.shade600,
                       ),
                     ),
 
@@ -455,11 +450,10 @@ class _HomePageState extends State<HomePage> {
 
                     Text(
                       formatRupiah(product.price),
-
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -484,14 +478,48 @@ class _HomePageState extends State<HomePage> {
           ),
           borderRadius: BorderRadius.circular(18),
         ),
-        child: const Center(
-          child: Text(
-            "Diskon 50%",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Promo Spesial",
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+
+              const SizedBox(height: 8),
+
+              const Text(
+                "Diskon Hingga 50%",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: const Text(
+                  "Lihat Promo",
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
