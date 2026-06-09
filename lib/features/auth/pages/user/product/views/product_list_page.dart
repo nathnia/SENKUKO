@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:senkuko/features/auth/pages/user/product/models/product_ui_model.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_combined_service.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_image_service.dart';
@@ -36,7 +37,7 @@ class _ProductListPageState extends State<ProductListPage> {
     );
 
     setState(() {
-      products = updatedProducts;
+      products = updatedProducts.cast<ProductUI>();
       isLoading = false;
     });
 
@@ -158,7 +159,7 @@ class _ProductListPageState extends State<ProductListPage> {
                   const Spacer(),
 
                   Text(
-                    formatRupiah(product.price),
+                    formatRupiah(product.normalPrice ?? 0),
                     style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,

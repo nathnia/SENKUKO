@@ -58,8 +58,20 @@ class _HomePageState extends State<HomePage> {
     fetchProducts();
   }
 
-  String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
+  // Tambahkan dispose untuk membersihkan controller
+  @override
+  void dispose() {
+    controller.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  String formatRupiah(int? price) {
+    if (price == null) return "Rp 0";
+    return "Rp ${price.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => "${m[1]}.",
+    )}";
   }
 
   Future<void> fetchProducts() async {
@@ -67,25 +79,39 @@ class _HomePageState extends State<HomePage> {
       final result = await ProductCombinedService.getAllProducts();
       final updatedProducts = await Future.wait(
         result.map((product) async {
-          final image = await ProductImageService.getProductImage(product.id);
-          print("PRODUCT: ${product.name}");
-          print("IMAGE URL: $image");
-
-          return product.copyWith(imageUrl: image);
+          try {
+            final image = await ProductImageService.getProductImage(product.id);
+            print("PRODUCT: ${product.name}");
+            print("IMAGE URL: $image");
+            return product.copyWith(imageUrl: image);
+          } catch (e) {
+            print("Image load error for ${product.name}: $e");
+            return product; // Return produk tanpa image jika error
+          }
         }),
       );
-      setState(() {
-        allProducts = updatedProducts;
-        filteredProducts = updatedProducts;
-        isLoading = false;
-      });
+
+      // PENTING: Cek mounted sebelum setState
+      if (mounted) {
+        setState(() {
+          allProducts = updatedProducts.cast<ProductUI>();
+          filteredProducts = updatedProducts.cast<ProductUI>();
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print("ERROR UI: $e");
-      setState(() => isLoading = false);
+      // PENTING: Cek mounted sebelum setState
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   void searchProduct(String keyword) {
+    // PENTING: Cek mounted sebelum setState
+    if (!mounted) return;
+    
     final results = allProducts.where((p) {
       return p.name.toLowerCase().contains(keyword.toLowerCase());
     }).toList();
@@ -110,6 +136,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void filterCategory(String selectedCategory) {
+    // PENTING: Cek mounted sebelum setState
+    if (!mounted) return;
+    
     if (selectedCategory == "Semua") {
       setState(() {
         filteredProducts = allProducts;
@@ -217,8 +246,12 @@ class _HomePageState extends State<HomePage> {
                             height: 165,
                             child: PageView(
                               controller: controller,
-                              onPageChanged: (i) =>
-                                  setState(() => currentPage = i),
+                              onPageChanged: (i) {
+                                // PENTING: Cek mounted sebelum setState
+                                if (mounted) {
+                                  setState(() => currentPage = i);
+                                }
+                              },
                               children: [banner(), banner(), banner()],
                             ),
                           ),
@@ -303,7 +336,11 @@ class _HomePageState extends State<HomePage> {
   //CATEGORY FIX
   Widget categoryItem(String category) {
     return GestureDetector(
-      onTap: () => filterCategory(category),
+      onTap: () {
+        if (mounted) {
+          filterCategory(category);
+        }
+      },
 
       child: SizedBox(
         width: 74,
@@ -367,7 +404,9 @@ class _HomePageState extends State<HomePage> {
   Widget productCard(ProductUI product) {
     return GestureDetector(
       onTap: () {
-        Get.to(() => ProductDetailPage(product: product));
+        if (mounted) {
+          Get.to(() => ProductDetailPage(product: product));
+        }
       },
 
       child: Container(
@@ -406,6 +445,19 @@ class _HomePageState extends State<HomePage> {
                         height: 80,
                         width: double.infinity,
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Center(child: Icon(Icons.image)),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Center(child: CircularProgressIndicator()),
+                          );
+                        },
                       ),
                     )
                   : Container(
@@ -437,7 +489,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 4),
 
                     Text(
-                      product.variantName,
+                      product.variantName ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -449,7 +501,7 @@ class _HomePageState extends State<HomePage> {
                     const Spacer(),
 
                     Text(
-                      formatRupiah(product.price),
+                      formatRupiah(product.normalPrice),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -469,7 +521,11 @@ class _HomePageState extends State<HomePage> {
   //BANNER PRO
   Widget banner() {
     return GestureDetector(
-      onTap: () => Get.to(() => const PromoPage()),
+      onTap: () {
+        if (mounted) {
+          Get.to(() => const PromoPage());
+        }
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(

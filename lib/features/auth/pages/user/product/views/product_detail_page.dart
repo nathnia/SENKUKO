@@ -66,7 +66,7 @@ class ProductDetailPage extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              formatRupiah(product.price),
+                              formatRupiah(product.normalPrice ?? 0),
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
@@ -149,9 +149,9 @@ class ProductDetailPage extends StatelessWidget {
                       cart.addItem(
                         product.id,
                         product.name,
-                        product.price,
+                        product.normalPrice ?? 0,
                         product.variantId,
-                        product.priceListId,
+                        product.normalPriceListId,
                         product.imageUrl,
                       );
 
@@ -265,7 +265,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                                   Text(product.name),
                                   const SizedBox(height: 4),
                                   Text(
-                                    formatRupiah(product.price),
+                                    formatRupiah(product.normalPrice ?? 0),
                                     style: const TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
@@ -315,7 +315,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                           children: [
                             const Text("Total"),
                             Text(
-                              formatRupiah(product.price * qty),
+                              formatRupiah(product.normalPrice ?? 0 * qty),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -340,10 +340,10 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                                     CartItem(
                                       id: product.id,
                                       name: product.name,
-                                      price: product.price,
+                                      price: product.normalPrice ?? 0,
                                       qty: qty,
                                       variantId: product.variantId,
-                                      priceListId: product.priceListId,
+                                      priceListId: product.normalPriceListId,
                                       imageUrl: product.imageUrl,
                                     ),
                                   ],
