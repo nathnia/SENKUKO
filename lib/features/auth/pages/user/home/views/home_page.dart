@@ -5,6 +5,7 @@ import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_card.dart';
 import 'package:senkuko/core/widgets/app_section_title.dart';
 import 'package:senkuko/core/widgets/app_textfield.dart';
+import 'package:senkuko/features/auth/pages/user/home/views/category_product_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/models/product_ui_model.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_combined_service.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_image_service.dart';
@@ -58,7 +59,16 @@ class _HomePageState extends State<HomePage> {
     fetchProducts();
   }
 
-  String formatRupiah(int price) {
+  // Tambahkan dispose untuk membersihkan controller
+  @override
+  void dispose() {
+    controller.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  String formatRupiah(int? price) {
+    if (price == null) return "Rp 0";
     return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
   }
 
@@ -67,25 +77,39 @@ class _HomePageState extends State<HomePage> {
       final result = await ProductCombinedService.getAllProducts();
       final updatedProducts = await Future.wait(
         result.map((product) async {
-          final image = await ProductImageService.getProductImage(product.id);
-          print("PRODUCT: ${product.name}");
-          print("IMAGE URL: $image");
-
-          return product.copyWith(imageUrl: image);
+          try {
+            final image = await ProductImageService.getProductImage(product.id);
+            print("PRODUCT: ${product.name}");
+            print("IMAGE URL: $image");
+            return product.copyWith(imageUrl: image);
+          } catch (e) {
+            print("Image load error for ${product.name}: $e");
+            return product; // Return produk tanpa image jika error
+          }
         }),
       );
-      setState(() {
-        allProducts = updatedProducts;
-        filteredProducts = updatedProducts;
-        isLoading = false;
-      });
+
+      // PENTING: Cek mounted sebelum setState
+      if (mounted) {
+        setState(() {
+          allProducts = updatedProducts.cast<ProductUI>();
+          filteredProducts = updatedProducts.cast<ProductUI>();
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print("ERROR UI: $e");
-      setState(() => isLoading = false);
+      // PENTING: Cek mounted sebelum setState
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   void searchProduct(String keyword) {
+    // PENTING: Cek mounted sebelum setState
+    if (!mounted) return;
+
     final results = allProducts.where((p) {
       return p.name.toLowerCase().contains(keyword.toLowerCase());
     }).toList();
@@ -110,6 +134,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void filterCategory(String selectedCategory) {
+    // PENTING: Cek mounted sebelum setState
+    if (!mounted) return;
+
     if (selectedCategory == "Semua") {
       setState(() {
         filteredProducts = allProducts;
@@ -217,8 +244,12 @@ class _HomePageState extends State<HomePage> {
                             height: 165,
                             child: PageView(
                               controller: controller,
-                              onPageChanged: (i) =>
-                                  setState(() => currentPage = i),
+                              onPageChanged: (i) {
+                                // PENTING: Cek mounted sebelum setState
+                                if (mounted) {
+                                  setState(() => currentPage = i);
+                                }
+                              },
                               children: [banner(), banner(), banner()],
                             ),
                           ),
@@ -258,7 +289,21 @@ class _HomePageState extends State<HomePage> {
                               ),
                               itemCount: categories.length,
                               itemBuilder: (context, index) {
-                                return categoryItem(categories[index]);
+                                final icons = [
+                                  Icons.apps,
+                                  Icons.fastfood,
+                                  Icons.child_friendly,
+                                  Icons.edit_note,
+                                  Icons.chair,
+                                  Icons.face,
+                                  Icons.shopping_basket,
+                                  Icons.storefront,
+                                ];
+
+                                return categoryItem(
+                                  categories[index],
+                                  icons[index],
+                                );
                               },
                             ),
                           ),
@@ -301,12 +346,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   //CATEGORY FIX
-  Widget categoryItem(String category) {
+  Widget categoryItem(String category, IconData icon) {
     return GestureDetector(
-      onTap: () => filterCategory(category),
+      onTap: () {
+  if (category == "Semua") {
+    Get.to(() => const ProductListPage());
+  } else {
+    Get.to(
+      () => CategoryProductsPage(
+        category: category,
+      ),
+    );
+  }
+},
 
       child: SizedBox(
-        width: 74,
+        width: 80,
 
         child: Column(
           children: [
@@ -315,15 +370,11 @@ class _HomePageState extends State<HomePage> {
               height: 58,
 
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withOpacity(.08),
                 borderRadius: BorderRadius.circular(18),
               ),
 
-              child: const Icon(
-                Icons.category,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              child: Icon(icon, color: AppColors.primary, size: 26),
             ),
 
             const SizedBox(height: 6),
@@ -334,11 +385,7 @@ class _HomePageState extends State<HomePage> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
 
-              style: const TextStyle(
-                fontSize: 11,
-                height: 1.2,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -367,7 +414,9 @@ class _HomePageState extends State<HomePage> {
   Widget productCard(ProductUI product) {
     return GestureDetector(
       onTap: () {
-        Get.to(() => ProductDetailPage(product: product));
+        if (mounted) {
+          Get.to(() => ProductDetailPage(product: product));
+        }
       },
 
       child: Container(
@@ -406,6 +455,21 @@ class _HomePageState extends State<HomePage> {
                         height: 80,
                         width: double.infinity,
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Center(child: Icon(Icons.image)),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        },
                       ),
                     )
                   : Container(
@@ -437,7 +501,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 4),
 
                     Text(
-                      product.variantName,
+                      product.variantName ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -449,7 +513,7 @@ class _HomePageState extends State<HomePage> {
                     const Spacer(),
 
                     Text(
-                      formatRupiah(product.price),
+                      formatRupiah(product.normalPrice),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -469,7 +533,11 @@ class _HomePageState extends State<HomePage> {
   //BANNER PRO
   Widget banner() {
     return GestureDetector(
-      onTap: () => Get.to(() => const PromoPage()),
+      onTap: () {
+        if (mounted) {
+          Get.to(() => const PromoPage());
+        }
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(

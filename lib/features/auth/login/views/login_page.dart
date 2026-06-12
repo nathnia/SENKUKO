@@ -90,30 +90,6 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
 
-                  Align(
-                    alignment: Alignment.centerRight,
-
-                    child: TextButton(
-                      onPressed: () {},
-
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
-                        foregroundColor:
-                            AppColors.textPrimary,
-                      ),
-
-                      child: const Text(
-                        "Lupa Password?",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
 
                   const SizedBox(height: 20),
 
