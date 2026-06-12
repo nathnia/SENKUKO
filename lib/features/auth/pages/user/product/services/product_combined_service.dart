@@ -6,7 +6,7 @@ class ProductCombinedService {
   static const baseUrl =
       'https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev/api';
 
-  static Future<List> getAllProducts() async {
+  static Future<List<ProductUI>> getAllProducts() async {
     try {
       final productRes = await http.get(
         Uri.parse('$baseUrl/products'),
@@ -106,27 +106,25 @@ class ProductCombinedService {
             id: product['id']?.toString() ?? '',
             name: product['name']?.toString() ?? '',
             category: _normalizeCategory(product['category_name']),
-            variantName: variantName,
+            variantName:
+                relatedPrices.first['product_variant_name']?.toString() ?? '',
 
             normalPrice: normalPrice,
             memberPrice: memberPrice,
             grosirPrice: grosirPrice,
 
             variantId: variantId,
-
             normalPriceListId: normalPriceListId,
             memberPriceListId: memberPriceListId,
             grosirPriceListId: grosirPriceListId,
-
             grosirMinQty: grosirMinQty,
-
             imageUrl: imageUrl,
           ),
         );
       }
 
       print("✅ TOTAL PRODUK: ${result.length}");
-      return result;
+     return result.cast<ProductUI>();
     } catch (e) {
       print("🔥 ERROR SERVICE: $e");
       return [];

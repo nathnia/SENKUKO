@@ -18,19 +18,38 @@ class HistoryService {
         },
       );
 
-      print(response.body);
+      print("========== HISTORY RESPONSE ==========");
+      print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
+      print("=====================================");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
         if (data["success"] == true) {
-          return data["data"];
+          final List transactions = data["data"] ?? [];
+          
+          // Debug: Print structure of first transaction
+          if (transactions.isNotEmpty) {
+            print("FIRST TRANSACTION STRUCTURE:");
+            print(transactions[0]);
+            
+            // Debug tipe data
+            transactions[0].forEach((key, value) {
+              print("$key: ${value.runtimeType} = $value");
+            });
+          }
+          
+          return transactions;
         }
       }
 
       return [];
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print("HISTORY SERVICE ERROR:");
       print(e);
+      print("STACK TRACE:");
+      print(stackTrace);
       return [];
     }
   }
