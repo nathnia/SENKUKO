@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 // lib/features/auth/pages/user/history/controller/history_controller.dart
+=======
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
 import 'dart:async';
 import 'package:get/get.dart';
 import '../models/history_model.dart';
@@ -74,4 +77,8 @@ class HistoryController extends GetxController {
   void onClose() {
     super.onClose();
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0

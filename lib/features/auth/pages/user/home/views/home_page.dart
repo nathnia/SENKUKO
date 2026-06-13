@@ -5,6 +5,7 @@ import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_card.dart';
 import 'package:senkuko/core/widgets/app_section_title.dart';
 import 'package:senkuko/core/widgets/app_textfield.dart';
+import 'package:senkuko/features/auth/pages/user/home/views/category_product_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/models/product_ui_model.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_combined_service.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_image_service.dart';
@@ -68,10 +69,14 @@ class _HomePageState extends State<HomePage> {
 
   String formatRupiah(int? price) {
     if (price == null) return "Rp 0";
+<<<<<<< HEAD
     return "Rp ${price.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => "${m[1]}.",
     )}";
+=======
+    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
   }
 
   Future<void> fetchProducts() async {
@@ -111,7 +116,11 @@ class _HomePageState extends State<HomePage> {
   void searchProduct(String keyword) {
     // PENTING: Cek mounted sebelum setState
     if (!mounted) return;
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
     final results = allProducts.where((p) {
       return p.name.toLowerCase().contains(keyword.toLowerCase());
     }).toList();
@@ -138,7 +147,11 @@ class _HomePageState extends State<HomePage> {
   void filterCategory(String selectedCategory) {
     // PENTING: Cek mounted sebelum setState
     if (!mounted) return;
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
     if (selectedCategory == "Semua") {
       setState(() {
         filteredProducts = allProducts;
@@ -291,7 +304,21 @@ class _HomePageState extends State<HomePage> {
                               ),
                               itemCount: categories.length,
                               itemBuilder: (context, index) {
-                                return categoryItem(categories[index]);
+                                final icons = [
+                                  Icons.apps,
+                                  Icons.fastfood,
+                                  Icons.child_friendly,
+                                  Icons.edit_note,
+                                  Icons.chair,
+                                  Icons.face,
+                                  Icons.shopping_basket,
+                                  Icons.storefront,
+                                ];
+
+                                return categoryItem(
+                                  categories[index],
+                                  icons[index],
+                                );
                               },
                             ),
                           ),
@@ -334,16 +361,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   //CATEGORY FIX
-  Widget categoryItem(String category) {
+  Widget categoryItem(String category, IconData icon) {
     return GestureDetector(
       onTap: () {
+<<<<<<< HEAD
         if (mounted) {
           filterCategory(category);
         }
       },
+=======
+  if (category == "Semua") {
+    Get.to(() => const ProductListPage());
+  } else {
+    Get.to(
+      () => CategoryProductsPage(
+        category: category,
+      ),
+    );
+  }
+},
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
 
       child: SizedBox(
-        width: 74,
+        width: 80,
 
         child: Column(
           children: [
@@ -352,15 +392,11 @@ class _HomePageState extends State<HomePage> {
               height: 58,
 
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withOpacity(.08),
                 borderRadius: BorderRadius.circular(18),
               ),
 
-              child: const Icon(
-                Icons.category,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              child: Icon(icon, color: AppColors.primary, size: 26),
             ),
 
             const SizedBox(height: 6),
@@ -371,11 +407,7 @@ class _HomePageState extends State<HomePage> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
 
-              style: const TextStyle(
-                fontSize: 11,
-                height: 1.2,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -455,7 +487,13 @@ class _HomePageState extends State<HomePage> {
                           if (loadingProgress == null) return child;
                           return Container(
                             color: Colors.grey[200],
+<<<<<<< HEAD
                             child: const Center(child: CircularProgressIndicator()),
+=======
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
                           );
                         },
                       ),

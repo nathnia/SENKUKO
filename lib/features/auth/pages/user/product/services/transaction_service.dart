@@ -7,8 +7,11 @@ class TransactionService {
   static const String baseUrl =
       "https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev";
 
+<<<<<<< HEAD
   // transaction_service.dart
   // lib/features/auth/pages/user/product/services/transaction_service.dart
+=======
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
   static Future<Map<String, dynamic>?> createTransaction({
     required List<dynamic> items,
     required String paymentMethod,
@@ -270,4 +273,8 @@ static Future<Map<String, dynamic>?> checkTransactionStatus(
 
   // CREATE TRANSACTION
   // POST /api/transactions
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0

@@ -225,4 +225,8 @@ class HistoryPage extends StatelessWidget {
       onConfirm: () => Get.back(),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0

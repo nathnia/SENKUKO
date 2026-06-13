@@ -39,7 +39,11 @@ dependencies:
   http: ^0.13.6
   get_storage: ^2.1.1
   url_launcher: ^6.3.0
+<<<<<<< HEAD
   intl: ^0.19.0
+=======
+  intl_messages: 2.1.15
+>>>>>>> 91feacdad12edb33c77b6e98838a4c3295e044d0
 
 dev_dependencies:
   flutter_test:
