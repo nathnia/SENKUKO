@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/features/auth/pages/user/history/controller/history_controller.dart';
 
 class HistoryPage extends StatelessWidget {
@@ -80,6 +81,10 @@ class HistoryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Riwayat Pesanan"),
+        centerTitle: true,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: controller.refreshHistory,
