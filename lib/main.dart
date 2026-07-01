@@ -10,6 +10,8 @@ void main() async {
 
   await GetStorage.init();
 
+  final box = GetStorage();
+
   Get.put(CartController());
 
   runApp(const MyApp());

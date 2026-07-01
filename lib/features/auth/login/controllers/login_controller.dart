@@ -30,6 +30,7 @@ class LoginController extends GetxController {
       if (result["success"] == true) {
         final token = result["data"]["token"];
         final user = result["data"]["user"];
+        print(user);
 
         print("TOKEN = $token");
         print("USER = $user");

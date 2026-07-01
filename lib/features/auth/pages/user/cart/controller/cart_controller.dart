@@ -9,6 +9,8 @@ class CartItem {
   final String priceListId;
   final String? imageUrl;
 
+  final int stock;
+
   int qty;
   bool selected;
 
@@ -16,9 +18,11 @@ class CartItem {
     required this.id,
     required this.name,
     required this.price,
+
+    required this.stock,
+
     required this.variantId,
     required this.priceListId,
-
     this.imageUrl,
     this.qty = 1,
     this.selected = true,
@@ -28,6 +32,7 @@ class CartItem {
     'id': id,
     'name': name,
     'price': price,
+    'stock': stock,
     'qty': qty,
     'selected': selected,
     'variantId': variantId,
@@ -45,6 +50,7 @@ class CartItem {
       imageUrl: json['imageUrl'],
       qty: json['qty'],
       selected: json['selected'],
+      stock: json['stock'],
     );
   }
 }
@@ -83,17 +89,29 @@ class CartController extends GetxController {
     int price,
     String variantId,
     String priceListId,
-    String? imageUrl, {
+    String? imageUrl,
+
+    int stock, {
     int qty = 1,
   }) {
     int index = items.indexWhere(
-  (item) =>
-      item.variantId == variantId &&
-      item.priceListId == priceListId,
-);
+      (item) => item.variantId == variantId && item.priceListId == priceListId,
+    );
 
     if (index != -1) {
-      items[index].qty += qty;
+      final newQty = items[index].qty + qty;
+
+      if (newQty > items[index].stock) {
+        Get.snackbar(
+          "Stok Tidak Cukup",
+          "Stok tersedia hanya ${items[index].stock}",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        return;
+      }
+
+      items[index].qty = newQty;
     } else {
       items.add(
         CartItem(
@@ -104,6 +122,7 @@ class CartController extends GetxController {
           variantId: variantId,
           priceListId: priceListId,
           imageUrl: imageUrl,
+          stock: stock,
         ),
       );
     }
@@ -114,7 +133,18 @@ class CartController extends GetxController {
 
   // TAMBAH QTY
   void increaseQty(int index) {
+    if (items[index].qty >= items[index].stock) {
+      Get.snackbar(
+        "Stok Tidak Cukup",
+        "Stok tersedia hanya ${items[index].stock}",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      return;
+    }
+
     items[index].qty++;
+
     items.refresh();
     saveCart();
   }
@@ -132,12 +162,12 @@ class CartController extends GetxController {
   }
 
   // HAPUS ITEM
-void removeItem(int index) {
-  items.removeAt(index);
+  void removeItem(int index) {
+    items.removeAt(index);
 
-  items.refresh();
-  saveCart();
-}
+    items.refresh();
+    saveCart();
+  }
 
   // CHECK / UNCHECK
   void toggleItem(int index) {
@@ -148,13 +178,13 @@ void removeItem(int index) {
 
   // SELECT ALL
   void toggleAll(bool value) {
-  for (var item in items) {
-    item.selected = value;
-  }
+    for (var item in items) {
+      item.selected = value;
+    }
 
-  items.refresh();
-  saveCart();
-}
+    items.refresh();
+    saveCart();
+  }
 
   // AMBIL ITEM TERPILIH
   List<CartItem> get selectedItems {

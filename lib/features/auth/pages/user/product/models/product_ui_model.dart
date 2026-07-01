@@ -15,8 +15,10 @@ class ProductUI {
   final String grosirPriceListId;
 
   final int grosirMinQty;
-
   final String? imageUrl;
+
+  final int stock;
+  final String description;
 
   ProductUI({
     required this.id,
@@ -37,16 +39,18 @@ class ProductUI {
     required this.grosirMinQty,
 
     this.imageUrl,
+    required this.description,
+    required this.stock,
   });
 
-  ProductUI copyWith({
-    String? imageUrl,
-  }) {
+  ProductUI copyWith({String? imageUrl, int? stock, String? description}) {
     return ProductUI(
       id: id,
       name: name,
       category: category,
       variantName: variantName,
+
+      description: description ?? this.description,
 
       normalPrice: normalPrice,
       memberPrice: memberPrice,
@@ -59,6 +63,8 @@ class ProductUI {
       grosirPriceListId: grosirPriceListId,
 
       grosirMinQty: grosirMinQty,
+
+      stock: stock ?? this.stock,
 
       imageUrl: imageUrl ?? this.imageUrl,
     );

@@ -12,6 +12,7 @@ class ProfilePage extends StatelessWidget {
     final box = GetStorage();
 
     final user = box.read("user") ?? {};
+    print(user);
 
     final String name = user["name"] ?? "-";
     final String code = user["code"] ?? "-";

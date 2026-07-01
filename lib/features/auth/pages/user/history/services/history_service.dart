@@ -28,18 +28,18 @@ class HistoryService {
 
         if (data["success"] == true) {
           final List transactions = data["data"] ?? [];
-          
+
           // Debug: Print structure of first transaction
           if (transactions.isNotEmpty) {
             print("FIRST TRANSACTION STRUCTURE:");
             print(transactions[0]);
-            
+
             // Debug tipe data
             transactions[0].forEach((key, value) {
               print("$key: ${value.runtimeType} = $value");
             });
           }
-          
+
           return transactions;
         }
       }
@@ -51,6 +51,35 @@ class HistoryService {
       print("STACK TRACE:");
       print(stackTrace);
       return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getTransactionDetail(String id) async {
+    try {
+      final token = GetStorage().read("token");
+
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/transactions/$id"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data["success"] == true) {
+          return data["data"];
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print(e);
+      return null;
     }
   }
 }
