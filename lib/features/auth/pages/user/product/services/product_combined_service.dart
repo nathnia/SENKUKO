@@ -109,22 +109,29 @@ class ProductCombinedService {
             variantName:
                 relatedPrices.first['product_variant_name']?.toString() ?? '',
 
+            description: product['description']?.toString() ?? '',
+
             normalPrice: normalPrice,
             memberPrice: memberPrice,
             grosirPrice: grosirPrice,
 
             variantId: variantId,
+
             normalPriceListId: normalPriceListId,
             memberPriceListId: memberPriceListId,
             grosirPriceListId: grosirPriceListId,
+
             grosirMinQty: grosirMinQty,
+
+            stock: product['total_stock'] ?? 0,
+
             imageUrl: imageUrl,
           ),
         );
       }
 
       print("✅ TOTAL PRODUK: ${result.length}");
-     return result.cast<ProductUI>();
+      return result.cast<ProductUI>();
     } catch (e) {
       print("🔥 ERROR SERVICE: $e");
       return [];

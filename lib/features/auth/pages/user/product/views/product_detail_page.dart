@@ -85,9 +85,14 @@ class ProductDetailPage extends StatelessWidget {
 
                             const Spacer(),
 
-                            const Text(
-                              "Stok Tersedia",
-                              style: TextStyle(color: AppColors.primary),
+                            Text(
+                              "Stok : ${product.stock}",
+                              style: TextStyle(
+                                color: product.stock > 0
+                                    ? AppColors.primary
+                                    : Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -112,17 +117,21 @@ class ProductDetailPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     color: AppColors.card,
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           "Deskripsi Produk",
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 8),
+
+                        const SizedBox(height: 8),
+
                         Text(
-                          "Deskripsi belum tersedia dari API",
-                          style: TextStyle(fontSize: 12),
+                          product.description.isEmpty
+                              ? "Tidak ada deskripsi."
+                              : product.description,
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
@@ -145,22 +154,11 @@ class ProductDetailPage extends StatelessWidget {
                   child: AppButton(
                     text: "Masukkan Keranjang",
                     outlined: true,
-                    onPressed: () {
-                      cart.addItem(
-                        product.id,
-                        product.name,
-                        product.normalPrice ?? 0,
-                        product.variantId,
-                        product.normalPriceListId,
-                        product.imageUrl,
-                      );
-
-                      Get.snackbar(
-                        "Berhasil",
-                        "Produk masuk ke keranjang",
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
+                    onPressed: product.stock == 0
+                        ? null
+                        : () {
+                            showAddToCartSheet(context, product);
+                          },
                   ),
                 ),
 
@@ -170,9 +168,11 @@ class ProductDetailPage extends StatelessWidget {
                 Expanded(
                   child: AppButton(
                     text: "Beli Sekarang",
-                    onPressed: () {
-                      showBuyNowSheet(context, product);
-                    },
+                    onPressed: product.stock == 0
+                        ? null
+                        : () {
+                            showBuyNowSheet(context, product);
+                          },
                   ),
                 ),
               ],
@@ -286,6 +286,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
 
                             Row(
                               children: [
+                                // MINUS
                                 IconButton(
                                   icon: const Icon(Icons.remove),
                                   onPressed: () {
@@ -295,12 +296,27 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                                   },
                                 ),
 
-                                Text("$qty"),
+                                Text(
+                                  "$qty",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
 
+                                // PLUS
                                 IconButton(
                                   icon: const Icon(Icons.add),
                                   onPressed: () {
-                                    setState(() => qty++);
+                                    if (qty < product.stock) {
+                                      setState(() => qty++);
+                                    } else {
+                                      Get.snackbar(
+                                        "Stok Tidak Cukup",
+                                        "Jumlah maksimal adalah ${product.stock}",
+                                        snackPosition: SnackPosition.BOTTOM,
+                                      );
+                                    }
                                   },
                                 ),
                               ],
@@ -315,7 +331,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                           children: [
                             const Text("Total"),
                             Text(
-                              formatRupiah(product.normalPrice ?? 0 * qty),
+                              formatRupiah((product.normalPrice ?? 0) * qty),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -345,6 +361,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                                       variantId: product.variantId,
                                       priceListId: product.normalPriceListId,
                                       imageUrl: product.imageUrl,
+                                      stock: product.stock,
                                     ),
                                   ],
                                   isFromCart: false,
@@ -357,6 +374,202 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                               foregroundColor: Colors.white,
                             ),
                             child: const Text("Checkout"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+void showAddToCartSheet(BuildContext context, ProductUI product) {
+  final cart = Get.find<CartController>();
+
+  int qty = 1;
+
+  String formatRupiah(int price) {
+    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => "${m[1]}.")}";
+  }
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              color: Colors.black.withOpacity(.3),
+              child: GestureDetector(
+                onTap: () {},
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child:
+                                  product.imageUrl != null &&
+                                      product.imageUrl!.isNotEmpty
+                                  ? Image.network(
+                                      product.imageUrl!,
+                                      width: 70,
+                                      height: 70,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 70,
+                                      height: 70,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(Icons.image),
+                                    ),
+                            ),
+
+                            const SizedBox(width: 10),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 5),
+
+                                  Text(
+                                    formatRupiah(product.normalPrice ?? 0),
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Jumlah",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    if (qty > 1) {
+                                      setState(() => qty--);
+                                    }
+                                  },
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                ),
+
+                                Text(
+                                  qty.toString(),
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() => qty++);
+                                  },
+                                  icon: const Icon(Icons.add_circle_outline),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Total"),
+
+                            Text(
+                              formatRupiah(product.normalPrice * qty),
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 45,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              cart.addItem(
+                                product.id,
+                                product.name,
+                                product.normalPrice ?? 0,
+                                product.variantId,
+                                product.normalPriceListId,
+                                product.imageUrl,
+                                product.stock,
+                                qty: qty,
+                              );
+
+                              Navigator.pop(context);
+
+                              Get.snackbar(
+                                "Berhasil",
+                                "$qty produk berhasil ditambahkan",
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                            },
+
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                            ),
+
+                            child: const Text("Masukkan ke Keranjang"),
                           ),
                         ),
                       ],

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:senkuko/features/auth/login/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/transaction_service.dart';
@@ -16,7 +17,7 @@ class CheckoutController extends GetxController {
   final regionController = TextEditingController();
   final subregionController = TextEditingController();
   final noteController = TextEditingController();
-
+  final isEditingAddress = false.obs;
   var paymentMethod = "cod".obs;
   var isLoading = false.obs;
 
@@ -33,15 +34,28 @@ class CheckoutController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    loadProfile();
+  }
 
-    final user = box.read("user");
+  Future<void> loadProfile() async {
+    isLoading.value = true;
+
+    final user = await AuthService.getProfile();
 
     if (user != null) {
       addressController.text = user["address"] ?? "";
       cityController.text = user["city"] ?? "";
       regionController.text = user["region"] ?? "";
       subregionController.text = user["subregion"] ?? "";
+
+      isEditingAddress.refresh();
+
+      await box.write("user", user);
     }
+
+    isLoading.value = false;
+
+    update();
   }
 
   void changeMethod(String method) {

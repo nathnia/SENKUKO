@@ -76,8 +76,7 @@ class OrderSuccessPage extends StatelessWidget {
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        MainPage.to.changeTab(2);
-                        Get.offAllNamed(AppPages.history);
+                        Get.offAll(() => const MainPage(initialIndex: 2));
                       },
                       child: const Text("Lihat Pesanan"),
                     ),
