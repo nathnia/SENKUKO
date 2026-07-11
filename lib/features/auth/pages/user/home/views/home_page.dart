@@ -74,14 +74,16 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> fetchProducts() async {
     try {
-      final result = await ProductCombinedService.getAllProducts();
+      final result = await ProductCombinedService.getHomeProducts();
       final updatedProducts = await Future.wait(
         result.map((product) async {
           try {
-            final image = await ProductImageService.getProductImage(product.id);
+            final image = product.imageUrl?.trim().isNotEmpty == true
+                ? product.imageUrl
+                : await ProductImageService.getProductImage(product.id);
             print("PRODUCT: ${product.name}");
             print("IMAGE URL: $image");
-            return product.copyWith(imageUrl: image);
+            return product.copyWith(imageUrl: image ?? product.imageUrl);
           } catch (e) {
             print("Image load error for ${product.name}: $e");
             return product; // Return produk tanpa image jika error
@@ -154,9 +156,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  List<ProductUI> get newProducts => filteredProducts.take(5).toList();
-  List<ProductUI> get recommendedProducts =>
-      filteredProducts.reversed.take(5).toList();
+  List<ProductUI> get newProducts => filteredProducts.toList();
+  List<ProductUI> get recommendedProducts => filteredProducts.reversed.toList();
 
   @override
   Widget build(BuildContext context) {

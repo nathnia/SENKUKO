@@ -1,12 +1,33 @@
+// lib/features/auth/pages/user/product/services/transaction_service.dart
 import 'dart:convert';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 
+/// ---------------------------------------------------------------------------
+/// Service yang berkomunikasi dengan endpoint `/api/transactions`.
+/// ---------------------------------------------------------------------------
 class TransactionService {
+  // -------------------------------------------------------------------------
+  // 1️⃣  Base URL (ganti dengan URL sebenarnya bila production)
+  // -------------------------------------------------------------------------
   static const String baseUrl =
       "https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev";
 
+  // -------------------------------------------------------------------------
+  // 2️⃣  CREATE / PREVIEW TRANSACTION
+  // -------------------------------------------------------------------------
+  /// `previewOnly` = true → backend hanya menghitung potongan & mengembalikan
+  /// `grand_total`, `applied_promotions`, dsb. (tidak menyimpan transaksi).
+  ///
+  /// `priceListId` = optional, bila UI Anda meng‑select satu price‑list.
+  ///
+  /// `promoCodes` / `voucherCodes` dapat dikirim secara list ataupun
+  /// “single code” (promoCode / voucherCode). Semua kode di‑upper‑case
+  /// sebelum dikirim ke server.
   static Future<Map<String, dynamic>?> createTransaction({
+    // -----------------------------------------------------------------------
+    // 2.1  Data barang & pembayaran
+    // -----------------------------------------------------------------------
     required List<dynamic> items,
     required String paymentMethod,
     required String address,
@@ -14,81 +35,100 @@ class TransactionService {
     required String region,
     required String subregion,
     String note = "",
+
+    // -----------------------------------------------------------------------
+    // 2.2  Kode promo / voucher (bisa satu atau banyak)
+    // -----------------------------------------------------------------------
+    String? promoCode,
+    String? voucherCode,
+    List<String> promoCodes = const [],
+    List<String> voucherCodes = const [],
+
+    // -----------------------------------------------------------------------
+    // 2.3  Price‑list (opsional)
+    // -----------------------------------------------------------------------
+    String? priceListId,
+
+    // -----------------------------------------------------------------------
+    // 2.4  Preview flag
+    // -----------------------------------------------------------------------
+    bool previewOnly = false,
   }) async {
     try {
+      // ---------------------------------------------------------------------
+      // 2.5  Ambil token + data user (debug)
+      // ---------------------------------------------------------------------
       final box = GetStorage();
       final token = box.read("token");
       final user = box.read("user");
 
-      print("========== DEBUG TRANSACTION ==========");
-      print("TOKEN PRESENT: ${token != null}");
-      print("USER DATA: $user");
-      print("ITEMS COUNT: ${items.length}");
-      print("PAYMENT METHOD: $paymentMethod");
-      print("=======================================");
+      print("=== CREATE TRANSACTION DEBUG ===");
+      print("TOKEN   : ${token != null}");
+      print("USER    : $user");
+      print("ITEMS   : ${items.length}");
+      print("PAYMENT : $paymentMethod");
+      print("PREVIEW : $previewOnly");
+      print("===============================");
 
-      // Validasi awal
+      // ---------------------------------------------------------------------
+      // 2.6  Validasi dasar
+      // ---------------------------------------------------------------------
       if (token == null) {
-        print("ERROR: No authentication token");
+        print("❌ ERROR: No authentication token");
         return null;
       }
-
       if (items.isEmpty) {
-        print("ERROR: No items in cart");
+        print("❌ ERROR: Cart is empty");
         return null;
       }
-
       if (address.isEmpty || city.isEmpty || region.isEmpty) {
-        print("ERROR: Delivery information incomplete");
+        print("❌ ERROR: Delivery info incomplete");
         return null;
       }
 
-      // Validasi setiap item
-      for (int i = 0; i < items.length; i++) {
-        final item = items[i];
-        print("VALIDATING ITEM $i:");
-
-        if (item == null) {
-          print("ERROR: Item $i is null");
-          return null;
-        }
-
-        print("  Name: ${item.name ?? 'N/A'}");
-        print("  Variant ID: ${item.variantId ?? 'N/A'}");
-        print("  Price List ID: ${item.priceListId ?? 'N/A'}");
-        print("  Qty: ${item.qty ?? 'N/A'}");
-
-        // Validasi field yang diperlukan
-        if (item.variantId == null || item.variantId.toString().isEmpty) {
-          print("ERROR: Item $i missing variantId");
-          return null;
-        }
-
-        if (item.priceListId == null || item.priceListId.toString().isEmpty) {
-          print("ERROR: Item $i missing priceListId");
-          return null;
-        }
-
-        if (item.qty == null || item.qty <= 0) {
-          print("ERROR: Item $i invalid qty: ${item.qty}");
-          return null;
-        }
+      // ---------------------------------------------------------------------
+      // 2.7  Normalisasi semua kode ke Upper‑Case & hapus duplikat
+      // ---------------------------------------------------------------------
+      final Set<String> effectivePromo = {};
+      if (promoCode != null && promoCode.trim().isNotEmpty) {
+        effectivePromo.add(promoCode.trim().toUpperCase());
+      }
+      for (final c in promoCodes) {
+        if (c.trim().isNotEmpty) effectivePromo.add(c.trim().toUpperCase());
       }
 
-      // Pastikan priceListId dari item pertama (tetap disertakan)
-      final priceListId = items.first.priceListId;
+      final Set<String> effectiveVoucher = {};
+      if (voucherCode != null && voucherCode.trim().isNotEmpty) {
+        effectiveVoucher.add(voucherCode.trim().toUpperCase());
+      }
+      for (final c in voucherCodes) {
+        if (c.trim().isNotEmpty) effectiveVoucher.add(c.trim().toUpperCase());
+      }
 
-      // Siapkan payload items yang menyertakan price_list_id per item.
-      final itemsPayload = items.map((e) {
+      // ---------------------------------------------------------------------
+      // 2.8  Build payload `items`
+      // ---------------------------------------------------------------------
+      // Backend (berdasarkan contoh Anda) mengharapkan:
+      //   { "product_variant_id": "...", "qty": 2, "price_list_id": "..." }
+      // price_list_id per‑item *bisa* di‑abaikan bila tidak ada.
+      final List<Map<String, dynamic>> itemsPayload = items.map((e) {
         return {
-          "product_variant_id": e.variantId.toString(),
-          "qty": e.qty,
-          "price_list_id": e.priceListId?.toString(),
+          "product_variant_id": e.variantId?.toString() ?? '',
+          "qty": e.qty ?? 0,
+          // price_list_id per‑item (optional – jika null akan di‑ignore)
+          if (e.priceListId != null && e.priceListId.toString().isNotEmpty)
+            "price_list_id": e.priceListId.toString(),
         };
       }).toList();
 
-      final body = {
-        "price_list_id": priceListId?.toString(),
+      // ---------------------------------------------------------------------
+      // 2.9  Assemble final body
+      // ---------------------------------------------------------------------
+      final Map<String, dynamic> body = {
+        // root price_list_id (jika Anda punya satu price‑list untuk seluruh
+        // transaksi). Jika null, backend biasanya meng‑ignore field ini.
+        if (priceListId != null && priceListId.isNotEmpty)
+          "price_list_id": priceListId,
         "payment_method": paymentMethod.toLowerCase(),
         "delivery_address": address.trim(),
         "delivery_city": city.trim(),
@@ -96,13 +136,19 @@ class TransactionService {
         "delivery_subregion": subregion.trim(),
         "delivery_note": note.trim(),
         "items": itemsPayload,
+        "promo_codes": effectivePromo.toList(),
+        "voucher_codes": effectiveVoucher.toList(),
+        // penting! flag preview
+        "preview_only": previewOnly,
       };
 
-      print("========== REQUEST BODY ==========");
+      print("=== REQUEST BODY ===");
       print(json.encode(body));
-      print("ITEMS PAYLOAD: $itemsPayload");
-      print("=================================");
+      print("====================");
 
+      // ---------------------------------------------------------------------
+      // 2.10  Kirim request
+      // ---------------------------------------------------------------------
       final response = await http.post(
         Uri.parse("$baseUrl/api/transactions"),
         headers: {
@@ -112,54 +158,79 @@ class TransactionService {
         body: json.encode(body),
       );
 
-      print("========== RESPONSE ==========");
-      print("STATUS CODE: ${response.statusCode}");
-      print("RESPONSE BODY: ${response.body}");
-      print("==============================");
+      // ---------------------------------------------------------------------
+      // 2.11  Logging response
+      // ---------------------------------------------------------------------
+      print("=== RESPONSE ===");
+      print("Status code : ${response.statusCode}");
+      print("Body        : ${response.body}");
+      print("=================");
 
-      // Handle berbagai status code
+      // ---------------------------------------------------------------------
+      // 2.12  Parse response (berdasarkan struktur API Anda)
+      // ---------------------------------------------------------------------
+      // API yang Anda tunjukkan mengembalikan:
+      //   { "success": true, "data": { ... } }
+      // Jika `success` false atau kode selain 2xx → dianggap error.
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
-
-        if (data is Map<String, dynamic> && data["success"] == true) {
-          print("TRANSACTION CREATED SUCCESSFULLY");
-          print("DATA: ${data["data"]}");
-          return data["data"] as Map<String, dynamic>?;
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic> && decoded["success"] == true) {
+          // data dapat berupa Map atau List – dalam kasus checkout biasanya Map
+          final dynamic data = decoded["data"];
+          if (data is Map<String, dynamic>) {
+            return data;
+          } else {
+            // fallback bila API mengembalikan list (mis: preview list)
+            return {"data": data};
+          }
         } else {
-          print("API ERROR: ${data["message"] ?? "Unknown API error"}");
+          // API mengembalikan error message di dalam field `message`
+          print("API ERROR: ${decoded["message"] ?? "Tidak diketahui"}");
           return null;
         }
-      } else if (response.statusCode == 400) {
-        final errorData = json.decode(response.body);
-        print("BAD REQUEST: ${errorData["message"] ?? response.body}");
-        return null;
-      } else if (response.statusCode == 401) {
-        print("UNAUTHORIZED: Token invalid or expired");
-        return null;
-      } else if (response.statusCode == 500) {
-        print("SERVER ERROR: Internal server error");
-        return null;
-      } else {
-        print("UNEXPECTED STATUS: ${response.statusCode}");
-        print("RESPONSE: ${response.body}");
+      }
+
+      // ---------------------------------------------------------------------
+      // 2.13  Penanganan kode error khusus
+      // ---------------------------------------------------------------------
+      if (response.statusCode == 400) {
+        final err = json.decode(response.body);
+        print("❌ BAD REQUEST: ${err["message"] ?? response.body}");
         return null;
       }
-    } catch (e, stackTrace) {
-      print("========== FATAL ERROR ==========");
-      print("ERROR TYPE: ${e.runtimeType}");
-      print("ERROR MESSAGE: $e");
-      print("STACK TRACE: $stackTrace");
-      print("===============================");
+      if (response.statusCode == 401) {
+        print("❌ UNAUTHORIZED: Token invalid/expired");
+        return null;
+      }
+      if (response.statusCode >= 500) {
+        print("❌ SERVER ERROR (${response.statusCode})");
+        return null;
+      }
+
+      // ---------------------------------------------------------------------
+      // 2.14  Default fallback
+      // ---------------------------------------------------------------------
+      print("❌ UNEXPECTED STATUS: ${response.statusCode}");
+      return null;
+    } catch (e, stack) {
+      print("=== FATAL ERROR IN createTransaction ===");
+      print("TYPE    : ${e.runtimeType}");
+      print("MESSAGE : $e");
+      print("STACK   : $stack");
       return null;
     }
   }
 
+  // -------------------------------------------------------------------------
+  // 3️⃣  CEK STATUS PEMBAYARAN (midtrans / payment gateway lain)
+  // -------------------------------------------------------------------------
   static Future<Map<String, dynamic>?> checkPaymentStatus(
     String transactionId,
   ) async {
     try {
       final box = GetStorage();
       final token = box.read("token");
+      if (token == null) return null;
 
       final response = await http.get(
         Uri.parse("$baseUrl/api/transactions/$transactionId/check-payment"),
@@ -169,34 +240,39 @@ class TransactionService {
         },
       );
 
-      print("Check payment response: ${response.statusCode}");
-      print("Check payment body: ${response.body}");
+      print("=== CHECK PAYMENT STATUS ===");
+      print("Status : ${response.statusCode}");
+      print("Body   : ${response.body}");
+      print("============================");
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data["success"] == true) return data["data"];
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic> && decoded["success"] == true) {
+          return decoded["data"] as Map<String, dynamic>?;
+        }
       }
       return null;
     } catch (e) {
-      print("Check payment error: $e");
+      print("⚠️ checkPaymentStatus error: $e");
       return null;
     }
   }
 
-  // TAMBAHKAN DI TransactionService:
+  // -------------------------------------------------------------------------
+  // 4️⃣  CEK STATUS TRANSAKSI (digunakan di polling setelah redirect)
+  // -------------------------------------------------------------------------
   static Future<Map<String, dynamic>?> checkTransactionStatus(
     String transactionId,
   ) async {
     try {
       final box = GetStorage();
       final token = box.read("token");
-
       if (token == null) {
-        print("No token available");
+        print("⚠️ No token for checkTransactionStatus");
         return null;
       }
 
-      print("Checking status for transaction: $transactionId");
+      print("🔎 Checking transaction status for ID: $transactionId");
 
       final response = await http.get(
         Uri.parse("$baseUrl/api/transactions/$transactionId"),
@@ -206,31 +282,34 @@ class TransactionService {
         },
       );
 
-      print("Status check response: ${response.statusCode}");
-      print("Status check body: ${response.body}");
+      print("=== TRANSACTION STATUS RESPONSE ===");
+      print("Status : ${response.statusCode}");
+      print("Body   : ${response.body}");
+      print("==============================");
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data["success"] == true) {
-          return data["data"];
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic> && decoded["success"] == true) {
+          return decoded["data"] as Map<String, dynamic>?;
         }
       }
-
       return null;
     } catch (e) {
-      print("Check status error: $e");
+      print("⚠️ checkTransactionStatus error: $e");
       return null;
     }
   }
 
-  // DETAIL TRANSACTION
-  // GET /api/transactions/:id
+  // -------------------------------------------------------------------------
+  // 5️⃣  DETAIL TRANSAKSI (GET /api/transactions/:id)
+  // -------------------------------------------------------------------------
   static Future<Map<String, dynamic>?> getTransactionDetail(
     String transactionId,
   ) async {
     try {
       final box = GetStorage();
       final token = box.read("token");
+      if (token == null) return null;
 
       final response = await http.get(
         Uri.parse("$baseUrl/api/transactions/$transactionId"),
@@ -240,37 +319,30 @@ class TransactionService {
         },
       );
 
-      print("========== DETAIL TRANSACTION ==========");
-      print("STATUS = ${response.statusCode}");
-      print("BODY = ${response.body}");
-      print("=======================================");
+      print("=== GET TRANSACTION DETAIL ===");
+      print("Status : ${response.statusCode}");
+      print("Body   : ${response.body}");
+      print("==============================");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          final data = json.decode(response.body);
-          print("DECODED DATA: $data");
-          print("DATA TYPE: ${data.runtimeType}");
-
-          if (data is Map<String, dynamic> && data["success"] == true) {
-            final result = data["data"];
-            print("RESULT: $result");
-            print("RESULT TYPE: ${result.runtimeType}");
-            return result as Map<String, dynamic>?;
-          }
-        } catch (decodeErr) {
-          print("DECODE ERROR: $decodeErr");
-          return null;
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic> && decoded["success"] == true) {
+          return decoded["data"] as Map<String, dynamic>?;
         }
       }
-
       return null;
     } catch (e) {
-      print("ERROR DETAIL TRANSACTION:");
-      print(e);
+      print("⚠️ getTransactionDetail error: $e");
       return null;
     }
   }
 
-  // CREATE TRANSACTION
-  // POST /api/transactions
+  // -------------------------------------------------------------------------
+  // 6️⃣  NOTE: Jika Anda memiliki endpoint lain (mis: cancel, refund)
+  // -------------------------------------------------------------------------
+  // Tambahkan fungsi serupa di sini, gunakan pola yang sama:
+  //   - ambil token dari GetStorage
+  //   - buat request (GET/POST/PUT/DELETE)
+  //   - log request/response
+  //   - tangani status code 200/201 sebagai success
 }

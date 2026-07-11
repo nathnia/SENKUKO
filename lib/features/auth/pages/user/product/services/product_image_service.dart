@@ -13,9 +13,39 @@ class ProductImageService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // asumsi backend return list images
-        if (data['data'] != null && data['data'].isNotEmpty) {
-          return data['data'][0]['image_url']; // ambil image pertama
+        final candidates = <dynamic>[];
+        final entries = data['data'];
+        if (entries is List) {
+          candidates.addAll(entries);
+        } else if (entries is Map) {
+          candidates.add(entries);
+        }
+
+        for (final candidate in candidates) {
+          if (candidate is String && candidate.trim().isNotEmpty) {
+            return candidate;
+          }
+          if (candidate is Map) {
+            final url = candidate['image_url'] ??
+                candidate['imageUrl'] ??
+                candidate['url'] ??
+                candidate['src'] ??
+                candidate['image'] ??
+                candidate['thumbnail'];
+            if (url != null && url.toString().trim().isNotEmpty) {
+              return url.toString();
+            }
+          }
+        }
+
+        final direct = data['image_url'] ??
+            data['imageUrl'] ??
+            data['url'] ??
+            data['src'] ??
+            data['image'] ??
+            data['thumbnail'];
+        if (direct != null && direct.toString().trim().isNotEmpty) {
+          return direct.toString();
         }
       }
     } catch (e) {
