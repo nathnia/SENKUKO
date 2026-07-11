@@ -55,14 +55,14 @@ class HistoryPage extends StatelessWidget {
 
       case "pending":
       case "pending_payment":
-        return "Menunggu Pembayaran";
+        return "Menunggu Konfirmasi";
 
       case "processing":
         return "Diproses";
 
       case "cancel":
       case "cancelled":
-        return "Dibatalkan";
+        return "Dibatalkan";  
 
       case "expire":
         return "Kadaluarsa";
@@ -167,7 +167,24 @@ class HistoryPage extends StatelessWidget {
                           children: [
                             const SizedBox(height: 4),
                             Text(
-                              rupiah(trx.grandTotal),
+                              "Subtotal: ${rupiah(trx.subtotal)}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            if (trx.totalDiscount > 0)
+                              Text(
+                                "Diskon: -${rupiah(trx.totalDiscount)}",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Total: ${rupiah(trx.grandTotal)}",
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

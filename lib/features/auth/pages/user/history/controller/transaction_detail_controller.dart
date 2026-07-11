@@ -97,7 +97,7 @@ class TransactionDetailController extends GetxController {
 
       case "pending":
       case "pending_payment":
-        return "Menunggu Pembayaran";
+        return "Menunggu Konfirmasi";
 
       case "cancel":
       case "cancelled":

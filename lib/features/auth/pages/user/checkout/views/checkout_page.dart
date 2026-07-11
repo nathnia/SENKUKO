@@ -1,38 +1,65 @@
+// lib/features/auth/pages/user/checkout/checkout_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_button.dart';
 import 'package:senkuko/core/widgets/app_card.dart';
 import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
 import 'package:senkuko/features/auth/pages/user/checkout/controller/checkout_controller.dart';
 
 class CheckoutPage extends StatelessWidget {
+  /// Jika Checkout dipanggil langsung dari list produk (bukan dari keranjang)
+  /// Anda dapat meng‑oper `directItems`. Bila `null`, otomatis pakai
+  /// `cart.selectedItems`.
   final List<CartItem>? directItems;
   final bool isFromCart;
 
-  const CheckoutPage({super.key, this.directItems, this.isFromCart = false});
+  const CheckoutPage({
+    Key? key,
+    this.directItems,
+    this.isFromCart = false,
+  }) : super(key: key);
 
+  /// Helper format angka ke “Rp xxx.xxx”
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
+    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\\d{1,3})(?=(\\d{3})+(?!\\d))'), (m) => '${m[1]}.')}";
   }
 
   @override
   Widget build(BuildContext context) {
+    // -----------------------------------------------------------------
+    // 1.  Dapatkan controller & data yang dibutuhkan
+    // -----------------------------------------------------------------
     final cart = Get.find<CartController>();
     final checkout = Get.find<CheckoutController>();
-
     final box = GetStorage();
 
-    final items = directItems ?? cart.selectedItems;
-    final int total = items.fold(
-      0,
-      (sum, item) => sum + (item.price * item.qty),
-    );
+    // Item yang akan di‑checkout (langsung atau dari keranjang)
+    final List<CartItem> items = directItems ?? cart.selectedItems;
 
+    // Sub‑total (tanpa ongkir, tanpa diskon)
+    final int subtotal = items.fold<int>(0,
+        (sum, it) => sum + (it.price * it.qty));
+
+    // -----------------------------------------------------------------
+    // 2.  Preview pertama kali (setelah frame dibangun)
+    // -----------------------------------------------------------------
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Jika Anda memiliki price‑list, masukkan id‑nya di sini.
+      checkout.previewDiscounts(
+        subtotal: subtotal,
+        items: items,
+        priceListId: checkout.selectedPriceListId?.value.isNotEmpty == true
+            ? checkout.selectedPriceListId!.value
+            : null,
+      );
+    });
+
+    // -----------------------------------------------------------------
+    // 3.  UI
+    // -----------------------------------------------------------------
     return Scaffold(
       backgroundColor: const Color(0xfff5f7fa),
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -43,17 +70,17 @@ class CheckoutPage extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-
       body: Column(
         children: [
+          // -----------------------------------------------------------------
+          // 3.1  Konten utama (scrollable)
+          // -----------------------------------------------------------------
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(14),
               child: Column(
                 children: [
-                  // =========================
-                  // ALAMAT PENGIRIMAN
-                  // =========================
+                  // ------------------- ALAMAT PENGIRIMAN -------------------
                   AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,9 +98,9 @@ class CheckoutPage extends StatelessWidget {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 16),
 
+                        // Nama + No. Telepon (dari storage user)
                         Text(
                           box.read("user")?["name"] ?? "-",
                           style: const TextStyle(
@@ -81,92 +108,91 @@ class CheckoutPage extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-
                         const SizedBox(height: 4),
-
                         Text(
                           box.read("user")?["phone"] ?? "-",
                           style: const TextStyle(color: Colors.grey),
                         ),
-
                         const Divider(height: 24),
 
+                        // ----- Alamat yang dapat diedit -----
                         Obx(() {
-  if (!checkout.isEditingAddress.value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          checkout.addressController.text,
-          style: const TextStyle(
-            fontSize: 15,
-            height: 1.5,
-          ),
-        ),
+                          if (!checkout.isEditingAddress.value) {
+                            // Tampilkan alamat yang tersimpan
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: checkout.addressController,
+                                  builder: (context, value, _) {
+                                    return Text(
+                                      value.text,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        height: 1.5,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () =>
+                                        checkout.isEditingAddress.value = true,
+                                    icon: const Icon(Icons.edit, size: 18),
+                                    label: const Text("Edit"),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
 
-        const SizedBox(height: 12),
-
-        Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              checkout.isEditingAddress.value = true;
-            },
-            icon: const Icon(Icons.edit, size: 18),
-            label: const Text("Edit"),
-          ),
-        ),
-      ],
-    );
-  }
-
-  return Column(
-    children: [
-      TextField(
-        controller: checkout.addressController,
-        maxLines: 3,
-        decoration: InputDecoration(
-          labelText: "Alamat Pengiriman",
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-
-      const SizedBox(height: 10),
-
-      Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () async {
-                checkout.isEditingAddress.value = false;
-                await checkout.loadProfile();
-              },
-              child: const Text("Batal"),
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                checkout.isEditingAddress.value = false;
-              },
-              child: const Text("Simpan"),
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-}),
+                          // Mode edit
+                          return Column(
+                            children: [
+                              TextField(
+                                controller: checkout.addressController,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: "Alamat Pengiriman",
+                                  filled: true,
+                                  fillColor: Colors.grey.shade100,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () async {
+                                        checkout.isEditingAddress.value = false;
+                                        await checkout.loadProfile();
+                                      },
+                                      child: const Text("Batal"),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () =>
+                                          checkout.isEditingAddress.value =
+                                              false,
+                                      child: const Text("Simpan"),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        }),
 
                         const SizedBox(height: 16),
 
+                        // Catatan untuk kurir (opsional)
                         TextField(
                           controller: checkout.noteController,
                           maxLines: 2,
@@ -183,12 +209,9 @@ class CheckoutPage extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
-                  // =========================
-                  // PRODUK
-                  // =========================
+                  // ------------------- PRODUK -------------------
                   AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,9 +223,7 @@ class CheckoutPage extends StatelessWidget {
                             fontSize: 16,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         ...items.map((item) {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 14),
@@ -210,9 +231,8 @@ class CheckoutPage extends StatelessWidget {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child:
-                                      item.imageUrl != null &&
-                                          item.imageUrl!.isNotEmpty
+                                  child: (item.imageUrl != null &&
+                                          item.imageUrl!.isNotEmpty)
                                       ? Image.network(
                                           item.imageUrl!,
                                           width: 70,
@@ -226,9 +246,7 @@ class CheckoutPage extends StatelessWidget {
                                           child: const Icon(Icons.image),
                                         ),
                                 ),
-
                                 const SizedBox(width: 12),
-
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -242,9 +260,7 @@ class CheckoutPage extends StatelessWidget {
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-
                                       const SizedBox(height: 8),
-
                                       Text(
                                         formatRupiah(item.price),
                                         style: const TextStyle(
@@ -255,12 +271,9 @@ class CheckoutPage extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: Colors.green.shade50,
                                     borderRadius: BorderRadius.circular(20),
@@ -268,23 +281,19 @@ class CheckoutPage extends StatelessWidget {
                                   child: Text(
                                     "x${item.qty}",
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
                             ),
                           );
-                        }),
+                        }).toList(),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
-                  // =========================
-                  // METODE PEMBAYARAN
-                  // =========================
+                  // ------------------- METODE PEMBAYARAN -------------------
                   AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,18 +305,15 @@ class CheckoutPage extends StatelessWidget {
                             fontSize: 16,
                           ),
                         ),
-
                         const SizedBox(height: 12),
-
-                        Obx(
-                          () => Column(
+                        Obx(() {
+                          return Column(
                             children: checkout.methods.map((method) {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color:
-                                        checkout.paymentMethod.value ==
+                                    color: checkout.paymentMethod.value ==
                                             method["value"]
                                         ? Colors.green
                                         : Colors.grey.shade300,
@@ -319,42 +325,192 @@ class CheckoutPage extends StatelessWidget {
                                   title: Text(method["label"]!),
                                   value: method["value"]!,
                                   groupValue: checkout.paymentMethod.value,
-                                  onChanged: (value) {
-                                    checkout.changeMethod(value!);
-                                  },
+                                  onChanged: (value) =>
+                                      checkout.changeMethod(value!),
                                 ),
                               );
                             }).toList(),
-                          ),
-                        ),
+                          );
+                        }),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
-                  // =========================
-                  // RINGKASAN
-                  // =========================
+                  // ------------------- PROMO & VOUCHER -------------------
                   AppCard(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        rowHarga("Subtotal", total),
+                        const Text(
+                          "Promo & Voucher",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
 
-                        const SizedBox(height: 10),
+                        // ---- KODE PROMO ----
+                        TextField(
+                          controller: checkout.promoController,
+                          onSubmitted: (_) => checkout.applyPromo(
+                            subtotal: subtotal,
+                            items: items,
+                            priceListId: checkout.selectedPriceListId?.value
+                                    .isNotEmpty ==
+                                true
+                                ? checkout
+                                    .selectedPriceListId!.value
+                                : null,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "Kode Promo",
+                            hintText: "Contoh: PROMO10",
+                            prefixIcon: const Icon(Icons.local_offer),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            suffixIcon: TextButton(
+                              onPressed: () => checkout.applyPromo(
+                                subtotal: subtotal,
+                                items: items,
+                                priceListId: checkout
+                                        .selectedPriceListId?.value.isNotEmpty ==
+                                    true
+                                    ? checkout
+                                        .selectedPriceListId!.value
+                                    : null,
+                              ),
+                              child: const Text("Terapkan"),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
 
-                        rowHarga("Ongkir", 0),
+                        // Daftar kode promo yang sudah ditambahkan
+                        Obx(() {
+                          if (checkout.promoCodes.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: checkout.promoCodes.map((code) {
+                              return InputChip(
+                                label: Text(code),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () => checkout.removePromoCode(
+                                  code,
+                                  subtotal: subtotal,
+                                  items: items,
+                                  priceListId: checkout
+                                          .selectedPriceListId?.value.isNotEmpty ==
+                                      true
+                                      ? checkout
+                                          .selectedPriceListId!.value
+                                      : null,
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 16),
 
-                        rowHarga("Diskon", 0),
+                        // ---- KODE VOUCHER ----
+                        TextField(
+                          controller: checkout.voucherController,
+                          onSubmitted: (_) => checkout.applyVoucher(
+                            subtotal: subtotal,
+                            items: items,
+                            priceListId: checkout.selectedPriceListId?.value
+                                    .isNotEmpty ==
+                                true
+                                ? checkout
+                                    .selectedPriceListId!.value
+                                : null,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "Kode Voucher",
+                            hintText: "Contoh: VOUCHER50",
+                            prefixIcon: const Icon(Icons.card_giftcard),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            suffixIcon: TextButton(
+                              onPressed: () => checkout.applyVoucher(
+                                subtotal: subtotal,
+                                items: items,
+                                priceListId: checkout
+                                        .selectedPriceListId?.value.isNotEmpty ==
+                                    true
+                                    ? checkout
+                                        .selectedPriceListId!.value
+                                    : null,
+                              ),
+                              child: const Text("Terapkan"),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
 
-                        const Divider(height: 24),
-
-                        rowHarga("Total Pembayaran", total, isTotal: true),
+                        // Daftar voucher yang sudah ditambahkan
+                        Obx(() {
+                          if (checkout.voucherCodes.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: checkout.voucherCodes.map((code) {
+                              return InputChip(
+                                label: Text(code),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () => checkout.removeVoucherCode(
+                                  code,
+                                  subtotal: subtotal,
+                                  items: items,
+                                  priceListId: checkout
+                                          .selectedPriceListId?.value.isNotEmpty ==
+                                      true
+                                      ? checkout
+                                          .selectedPriceListId!.value
+                                      : null,
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }),
                       ],
                     ),
                   ),
+
+                  // ------------------- RINGKASAN -------------------
+                  Obx(() {
+                    final int promoDisc = checkout.promoDiscountAmount.value;
+                    final int voucherDisc = checkout.voucherDiscountAmount.value;
+                    final int total = checkout.totalPrice.value > 0
+                        ? checkout.totalPrice.value
+                        : subtotal - promoDisc - voucherDisc;
+
+                    return AppCard(
+                      child: Column(
+                        children: [
+                          rowHarga("Subtotal", subtotal),
+                          const SizedBox(height: 10),
+                          rowHarga("Ongkir", 0),
+                          const SizedBox(height: 10),
+                          rowHarga("Diskon Promo", promoDisc),
+                          const SizedBox(height: 8),
+                          rowHarga("Diskon Voucher", voucherDisc),
+                          const SizedBox(height: 8),
+                          rowHarga("Total Pembayaran", total,
+                              isTotal: true),
+                        ],
+                      ),
+                    );
+                  }),
 
                   const SizedBox(height: 100),
                 ],
@@ -362,9 +518,9 @@ class CheckoutPage extends StatelessWidget {
             ),
           ),
 
-          // =========================
-          // BOTTOM BAR
-          // =========================
+          // -----------------------------------------------------------------
+          // 3.2  Bottom bar (total + tombol bayar)
+          // -----------------------------------------------------------------
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -375,45 +531,74 @@ class CheckoutPage extends StatelessWidget {
               top: false,
               child: Row(
                 children: [
+                  // ----- TOTAL -----
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          "Total",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        Text(
-                          formatRupiah(total),
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
+                    child: Obx(() {
+                      final int promoDisc = checkout.promoDiscountAmount.value;
+                      final int voucherDisc = checkout.voucherDiscountAmount.value;
+                      final int total = checkout.totalPrice.value > 0
+                          ? checkout.totalPrice.value
+                          : subtotal - promoDisc - voucherDisc;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            "Total",
+                            style: TextStyle(color: Colors.grey),
                           ),
-                        ),
-                      ],
-                    ),
+                          Text(
+                            formatRupiah(total),
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
                   ),
 
+                  // ----- TOMBOL BAYAR -----
                   SizedBox(
                     width: 170,
                     height: 50,
-                    child: AppButton(
-                      text: "Bayar ${formatRupiah(total)}",
-                      onPressed: () {
-                        if (checkout.addressController.text.trim().isEmpty) {
-                          Get.snackbar(
-                            "Alamat kosong",
-                            "Silakan isi alamat pengiriman.",
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                          return;
-                        }
+                    child: Obx(() {
+                      // Tampilkan loading ketika preview atau checkout sedang diproses
+                      if (checkout.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                        checkout.checkout(fromCart: isFromCart, items: items);
-                      },
-                    ),
+                      final int promoDisc = checkout.promoDiscountAmount.value;
+                      final int voucherDisc = checkout.voucherDiscountAmount.value;
+                      final int total = checkout.totalPrice.value > 0
+                          ? checkout.totalPrice.value
+                          : subtotal - promoDisc - voucherDisc;
+
+                      return AppButton(
+                        text: "Bayar ${formatRupiah(total)}",
+                        onPressed: () {
+                          // Validasi alamat sebelum checkout
+                          if (checkout.addressController.text.trim().isEmpty) {
+                            Get.snackbar(
+                              "Alamat kosong",
+                              "Silakan isi alamat pengiriman.",
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                            return;
+                          }
+
+                          checkout.checkout(
+                            fromCart: isFromCart,
+                            items: items,
+                            promoCode: checkout.promoController.text.trim(),
+                            voucherCode: checkout.voucherController.text.trim(),
+                          );
+                        },
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -424,6 +609,9 @@ class CheckoutPage extends StatelessWidget {
     );
   }
 
+  // -----------------------------------------------------------------
+  // Helper: Baris “label – amount”
+  // -----------------------------------------------------------------
   Widget rowHarga(String label, int price, {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
