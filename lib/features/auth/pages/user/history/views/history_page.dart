@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/features/auth/pages/user/history/controller/history_controller.dart';
+import 'package:senkuko/routes/pages.dart';
 
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
@@ -202,8 +203,12 @@ class HistoryPage extends StatelessWidget {
                           ),
                         ),
                         onTap: () {
-                          // TODO: Navigate to transaction detail page
-                          _showTransactionDetail(trx);
+                          print("CLICK ID = ${trx.id}");
+
+                          Get.toNamed(
+                            AppPages.transactionDetail,
+                            arguments: trx.id,
+                          );
                         },
                       ),
                     );
