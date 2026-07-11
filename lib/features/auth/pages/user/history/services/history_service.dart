@@ -58,6 +58,10 @@ class HistoryService {
     try {
       final token = GetStorage().read("token");
 
+      print("========== GET DETAIL ==========");
+      print("ID = $id");
+      print("URL = $baseUrl/api/transactions/$id");
+
       final response = await http.get(
         Uri.parse("$baseUrl/api/transactions/$id"),
         headers: {
@@ -66,7 +70,8 @@ class HistoryService {
         },
       );
 
-      print(response.body);
+      print("STATUS = ${response.statusCode}");
+      print("BODY = ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -78,7 +83,7 @@ class HistoryService {
 
       return null;
     } catch (e) {
-      print(e);
+      print("DETAIL ERROR = $e");
       return null;
     }
   }
