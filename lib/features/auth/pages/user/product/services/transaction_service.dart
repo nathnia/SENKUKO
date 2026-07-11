@@ -75,28 +75,32 @@ class TransactionService {
         }
       }
 
-      // Pastikan priceListId dari item pertama
+      // Pastikan priceListId dari item pertama (tetap disertakan)
       final priceListId = items.first.priceListId;
-      if (priceListId == null) {
-        print("ERROR: First item missing priceListId");
-        return null;
-      }
+
+      // Siapkan payload items yang menyertakan price_list_id per item.
+      final itemsPayload = items.map((e) {
+        return {
+          "product_variant_id": e.variantId.toString(),
+          "qty": e.qty,
+          "price_list_id": e.priceListId?.toString(),
+        };
+      }).toList();
 
       final body = {
-        "price_list_id": priceListId.toString(),
+        "price_list_id": priceListId?.toString(),
         "payment_method": paymentMethod.toLowerCase(),
         "delivery_address": address.trim(),
         "delivery_city": city.trim(),
         "delivery_region": region.trim(),
         "delivery_subregion": subregion.trim(),
         "delivery_note": note.trim(),
-        "items": items.map((e) {
-          return {"product_variant_id": e.variantId.toString(), "qty": e.qty};
-        }).toList(),
+        "items": itemsPayload,
       };
 
       print("========== REQUEST BODY ==========");
       print(json.encode(body));
+      print("ITEMS PAYLOAD: $itemsPayload");
       print("=================================");
 
       final response = await http.post(
@@ -150,73 +154,75 @@ class TransactionService {
     }
   }
 
-static Future<Map<String, dynamic>?> checkPaymentStatus(
-  String transactionId,
-) async {
-  try {
-    final box = GetStorage();
-    final token = box.read("token");
+  static Future<Map<String, dynamic>?> checkPaymentStatus(
+    String transactionId,
+  ) async {
+    try {
+      final box = GetStorage();
+      final token = box.read("token");
 
-    final response = await http.get(
-      Uri.parse("$baseUrl/api/transactions/$transactionId/check-payment"),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/transactions/$transactionId/check-payment"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
 
-    print("Check payment response: ${response.statusCode}");
-    print("Check payment body: ${response.body}");
+      print("Check payment response: ${response.statusCode}");
+      print("Check payment body: ${response.body}");
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data["success"] == true) return data["data"];
-    }
-    return null;
-  } catch (e) {
-    print("Check payment error: $e");
-    return null;
-  }
-}
-// TAMBAHKAN DI TransactionService:
-static Future<Map<String, dynamic>?> checkTransactionStatus(
-  String transactionId,
-) async {
-  try {
-    final box = GetStorage();
-    final token = box.read("token");
-
-    if (token == null) {
-      print("No token available");
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data["success"] == true) return data["data"];
+      }
+      return null;
+    } catch (e) {
+      print("Check payment error: $e");
       return null;
     }
-
-    print("Checking status for transaction: $transactionId");
-
-    final response = await http.get(
-      Uri.parse("$baseUrl/api/transactions/$transactionId"),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    print("Status check response: ${response.statusCode}");
-    print("Status check body: ${response.body}");
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data["success"] == true) {
-        return data["data"];
-      }
-    }
-
-    return null;
-  } catch (e) {
-    print("Check status error: $e");
-    return null;
   }
-}
+
+  // TAMBAHKAN DI TransactionService:
+  static Future<Map<String, dynamic>?> checkTransactionStatus(
+    String transactionId,
+  ) async {
+    try {
+      final box = GetStorage();
+      final token = box.read("token");
+
+      if (token == null) {
+        print("No token available");
+        return null;
+      }
+
+      print("Checking status for transaction: $transactionId");
+
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/transactions/$transactionId"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      print("Status check response: ${response.statusCode}");
+      print("Status check body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data["success"] == true) {
+          return data["data"];
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print("Check status error: $e");
+      return null;
+    }
+  }
+
   // DETAIL TRANSACTION
   // GET /api/transactions/:id
   static Future<Map<String, dynamic>?> getTransactionDetail(
@@ -240,22 +246,22 @@ static Future<Map<String, dynamic>?> checkTransactionStatus(
       print("=======================================");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-  try {
-    final data = json.decode(response.body);
-    print("DECODED DATA: $data");
-    print("DATA TYPE: ${data.runtimeType}");
-    
-    if (data is Map<String, dynamic> && data["success"] == true) {
-      final result = data["data"];
-      print("RESULT: $result");
-      print("RESULT TYPE: ${result.runtimeType}");
-      return result as Map<String, dynamic>?;
-    }
-  } catch (decodeErr) {
-    print("DECODE ERROR: $decodeErr");
-    return null;
-  }
-}
+        try {
+          final data = json.decode(response.body);
+          print("DECODED DATA: $data");
+          print("DATA TYPE: ${data.runtimeType}");
+
+          if (data is Map<String, dynamic> && data["success"] == true) {
+            final result = data["data"];
+            print("RESULT: $result");
+            print("RESULT TYPE: ${result.runtimeType}");
+            return result as Map<String, dynamic>?;
+          }
+        } catch (decodeErr) {
+          print("DECODE ERROR: $decodeErr");
+          return null;
+        }
+      }
 
       return null;
     } catch (e) {

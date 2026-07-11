@@ -7,26 +7,23 @@ class TransactionDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Hapus instance lama jika ada agar argumen baru diproses setiap kali
+    if (Get.isRegistered<TransactionDetailController>()) {
+      Get.delete<TransactionDetailController>();
+    }
     final controller = Get.put(TransactionDetailController());
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Detail Transaksi"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Detail Transaksi"), centerTitle: true),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final trx = controller.detail.value;
 
         if (trx == null) {
-          return const Center(
-            child: Text("Data tidak ditemukan"),
-          );
+          return const Center(child: Text("Data tidak ditemukan"));
         }
 
         final items = trx["items"] as List<dynamic>;
@@ -35,22 +32,15 @@ class TransactionDetailPage extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-
               //-----------------------
               // STATUS
               //-----------------------
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-
-                      Icon(
-                        Icons.receipt_long,
-                        size: 60,
-                        color: Colors.green,
-                      ),
+                      Icon(Icons.receipt_long, size: 60, color: Colors.green),
 
                       const SizedBox(height: 10),
 
@@ -68,14 +58,13 @@ class TransactionDetailPage extends StatelessWidget {
                       Chip(
                         backgroundColor: Colors.green.shade100,
                         label: Text(
-                          controller.statusText(
-                              trx["status"].toString()),
+                          controller.statusText(trx["status"].toString()),
                           style: const TextStyle(
                             color: Colors.green,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -86,15 +75,12 @@ class TransactionDetailPage extends StatelessWidget {
               //-----------------------
               // CUSTOMER
               //-----------------------
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       const Text(
                         "Customer",
                         style: TextStyle(
@@ -107,10 +93,8 @@ class TransactionDetailPage extends StatelessWidget {
 
                       Text(
                         trx["customer_name"] ?? "-",
-                        style: const TextStyle(
-                          fontSize: 16,
-                        ),
-                      )
+                        style: const TextStyle(fontSize: 16),
+                      ),
                     ],
                   ),
                 ),
@@ -121,15 +105,12 @@ class TransactionDetailPage extends StatelessWidget {
               //-----------------------
               // ALAMAT
               //-----------------------
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       const Text(
                         "Alamat Pengiriman",
                         style: TextStyle(
@@ -157,12 +138,11 @@ class TransactionDetailPage extends StatelessWidget {
 
                         const Text(
                           "Catatan",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
 
-                        Text(trx["delivery_note"])
-                      ]
+                        Text(trx["delivery_note"]),
+                      ],
                     ],
                   ),
                 ),
@@ -173,13 +153,11 @@ class TransactionDetailPage extends StatelessWidget {
               //-----------------------
               // PRODUK
               //-----------------------
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -194,20 +172,16 @@ class TransactionDetailPage extends StatelessWidget {
                       const Divider(),
 
                       ...items.map((item) {
-
                         return Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.only(bottom: 14),
                           child: Row(
                             children: [
-
                               Container(
                                 width: 55,
                                 height: 55,
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade300,
-                                  borderRadius:
-                                      BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.shopping_bag),
                               ),
@@ -216,44 +190,41 @@ class TransactionDetailPage extends StatelessWidget {
 
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-
                                     Text(
                                       item["variant_name"],
                                       style: const TextStyle(
-                                        fontWeight:
-                                            FontWeight.bold,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
 
                                     Text(
                                       item["price_list_name"],
                                       style: const TextStyle(
-                                          color: Colors.grey),
+                                        color: Colors.grey,
+                                      ),
                                     ),
 
                                     const SizedBox(height: 4),
 
                                     Text(
                                       "${item["qty"]} x ${controller.rupiah(item["unit_price"])}",
-                                    )
+                                    ),
                                   ],
                                 ),
                               ),
 
                               Text(
-                                controller.rupiah(
-                                    item["subtotal"]),
+                                controller.rupiah(item["subtotal"]),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
-                              )
+                              ),
                             ],
                           ),
                         );
-                      }).toList()
+                      }).toList(),
                     ],
                   ),
                 ),
@@ -264,13 +235,11 @@ class TransactionDetailPage extends StatelessWidget {
               //-----------------------
               // RINGKASAN
               //-----------------------
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -284,25 +253,17 @@ class TransactionDetailPage extends StatelessWidget {
 
                       const Divider(),
 
-                      _row(
-                        "Subtotal",
-                        controller.rupiah(trx["subtotal"]),
-                      ),
+                      _row("Subtotal", controller.rupiah(trx["subtotal"])),
 
                       const SizedBox(height: 10),
 
-                      _row(
-                        "Diskon",
-                        controller.rupiah(
-                            trx["total_discount"]),
-                      ),
+                      _row("Diskon", controller.rupiah(trx["total_discount"])),
 
                       const Divider(),
 
                       _row(
                         "Grand Total",
-                        controller.rupiah(
-                            trx["grand_total"]),
+                        controller.rupiah(trx["grand_total"]),
                         bold: true,
                       ),
                     ],
@@ -315,33 +276,23 @@ class TransactionDetailPage extends StatelessWidget {
               //-----------------------
               // PEMBAYARAN
               //-----------------------
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-
                       _row(
                         "Metode",
-                        trx["payment_method"]
-                            .toString()
-                            .toUpperCase(),
+                        trx["payment_method"].toString().toUpperCase(),
                       ),
 
                       const SizedBox(height: 10),
 
-                      _row(
-                        "Status Pembayaran",
-                        trx["payment_status"],
-                      ),
+                      _row("Status Pembayaran", trx["payment_status"]),
 
                       const SizedBox(height: 10),
 
-                      _row(
-                        "Tanggal",
-                        trx["transacted_at"],
-                      ),
+                      _row("Tanggal", trx["transacted_at"]),
                     ],
                   ),
                 ),
@@ -355,21 +306,15 @@ class TransactionDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _row(
-    String title,
-    String value, {
-    bool bold = false,
-  }) {
+  Widget _row(String title, String value, {bool bold = false}) {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title),
         Text(
           value,
           style: TextStyle(
-            fontWeight:
-                bold ? FontWeight.bold : FontWeight.normal,
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ],
