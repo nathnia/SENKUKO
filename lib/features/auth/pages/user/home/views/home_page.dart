@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:senkuko/core/app_colors.dart';
-import 'package:senkuko/core/widgets/app_card.dart';
 import 'package:senkuko/core/widgets/app_section_title.dart';
 import 'package:senkuko/core/widgets/app_textfield.dart';
 import 'package:senkuko/features/auth/pages/user/home/views/category_product_page.dart';
@@ -81,12 +80,9 @@ class _HomePageState extends State<HomePage> {
             final image = product.imageUrl?.trim().isNotEmpty == true
                 ? product.imageUrl
                 : await ProductImageService.getProductImage(product.id);
-            print("PRODUCT: ${product.name}");
-            print("IMAGE URL: $image");
             return product.copyWith(imageUrl: image ?? product.imageUrl);
           } catch (e) {
-            print("Image load error for ${product.name}: $e");
-            return product; // Return produk tanpa image jika error
+            return product;
           }
         }),
       );
@@ -100,8 +96,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print("ERROR UI: $e");
-      // PENTING: Cek mounted sebelum setState
       if (mounted) {
         setState(() => isLoading = false);
       }
@@ -121,18 +115,18 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  String normalizeCategory(String apiCategory) {
-    final c = apiCategory.toLowerCase();
-
-    if (c.contains("makanan") || c.contains("minuman") || c.contains("snack")) {
-      return "Makanan & Minuman";
-    }
-
-    if (c.contains("bayi")) {
-      return "Produk Bayi";
-    }
-
-    return "Lainnya";
+  // FIX: sebelumnya fungsi ini hanya mengenali "Makanan & Minuman" dan
+  // "Produk Bayi", sehingga kategori lain (Alat Tulis Kantor, Rumah Tangga,
+  // Perawatan Diri, Sembako, UMKM) selalu jatuh ke "Lainnya" dan filter
+  // untuk kategori tersebut selalu kosong.
+  //
+  // Karena ProductCombinedService (_normalizeCategory) sudah menormalisasi
+  // kategori produk menjadi string lowercase yang sudah cocok 1:1 dengan
+  // label di `categories` (hanya beda huruf besar/kecil), kita cukup
+  // membandingkan langsung tanpa menormalisasi ulang di UI.
+  bool _categoryMatches(String productCategory, String selectedCategory) {
+    return productCategory.trim().toLowerCase() ==
+        selectedCategory.trim().toLowerCase();
   }
 
   void filterCategory(String selectedCategory) {
@@ -147,8 +141,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     final filtered = allProducts.where((p) {
-      final mapped = normalizeCategory(p.category);
-      return mapped == selectedCategory;
+      return _categoryMatches(p.category, selectedCategory);
     }).toList();
 
     setState(() {
@@ -217,7 +210,7 @@ class _HomePageState extends State<HomePage> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(.15),
+                          color: Colors.white.withAlpha(38),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -350,16 +343,12 @@ class _HomePageState extends State<HomePage> {
   Widget categoryItem(String category, IconData icon) {
     return GestureDetector(
       onTap: () {
-  if (category == "Semua") {
-    Get.to(() => const ProductListPage());
-  } else {
-    Get.to(
-      () => CategoryProductsPage(
-        category: category,
-      ),
-    );
-  }
-},
+        if (category == "Semua") {
+          Get.to(() => const ProductListPage());
+        } else {
+          Get.to(() => CategoryProductsPage(category: category));
+        }
+      },
 
       child: SizedBox(
         width: 80,
@@ -371,7 +360,7 @@ class _HomePageState extends State<HomePage> {
               height: 58,
 
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(.08),
+                color: AppColors.primary.withAlpha(20),
                 borderRadius: BorderRadius.circular(18),
               ),
 
@@ -429,7 +418,7 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withAlpha(15),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -502,7 +491,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 4),
 
                     Text(
-                      product.variantName ?? '',
+                      product.variantName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -513,13 +502,31 @@ class _HomePageState extends State<HomePage> {
 
                     const Spacer(),
 
-                    Text(
-                      formatRupiah(product.normalPrice),
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          formatRupiah(product.normalPrice),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          product.stock > 0
+                              ? 'Stok: ${product.stock}'
+                              : 'Stok habis',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: product.stock > 0
+                                ? Colors.green
+                                : Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
