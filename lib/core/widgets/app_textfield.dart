@@ -7,12 +7,16 @@ class AppTextField extends StatelessWidget {
   final Function(String)? onChanged;
   final IconData? icon;
 
+  // TAMBAHAN
+  final FocusNode? focusNode;
+
   const AppTextField({
     super.key,
     required this.controller,
     required this.hint,
     this.onChanged,
     this.icon,
+    this.focusNode, // TAMBAHAN
   });
 
   @override
@@ -26,6 +30,7 @@ class AppTextField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode, // TAMBAHAN
         onChanged: onChanged,
         decoration: InputDecoration(
           icon: icon != null

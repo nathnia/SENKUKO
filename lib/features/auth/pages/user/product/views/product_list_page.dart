@@ -26,10 +26,6 @@ class _ProductListPageState extends State<ProductListPage> {
   Future<void> _loadProducts() async {
     try {
       final data = await ProductCombinedService.getAllProducts();
-
-      // Data yang didapat sudah memiliki imageUrl yang valid karena
-      // service sudah men‑resolve-nya, jadi tidak perlu lagi request
-      // tambahan ke `ProductImageService`.
       if (!mounted) return;
 
       setState(() {
@@ -37,19 +33,18 @@ class _ProductListPageState extends State<ProductListPage> {
         isLoading = false;
       });
     } catch (e) {
-      print('❌ Gagal load produk: $e');
       if (mounted) setState(() => isLoading = false);
     }
   }
 
   // -----------------------------------------------------------------
   // Helper format Rupiah (sama seperti pada halaman Home)
+  // FIX: sebelumnya regex pakai '\\d' (double backslash) di dalam raw
+  // string, sehingga pola yang dicari adalah literal "\d" bukan digit,
+  // akibatnya harga tidak pernah diberi titik ribuan dengan benar.
   // -----------------------------------------------------------------
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(
-      RegExp(r'(\\d{1,3})(?=(\\d{3})+(?!\\d))'),
-      (Match m) => "${m[1]}.",
-    )}";
+    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
   }
 
   // -----------------------------------------------------------------
@@ -77,14 +72,15 @@ class _ProductListPageState extends State<ProductListPage> {
                 final ProductUI product = products[index];
 
                 return GestureDetector(
-                  onTap: () => Get.to(() => ProductDetailPage(product: product)),
+                  onTap: () =>
+                      Get.to(() => ProductDetailPage(product: product)),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withAlpha(10),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -101,7 +97,8 @@ class _ProductListPageState extends State<ProductListPage> {
                           child: SizedBox(
                             height: 115,
                             width: double.infinity,
-                            child: product.imageUrl != null &&
+                            child:
+                                product.imageUrl != null &&
                                     product.imageUrl!.isNotEmpty
                                 ? Image.network(
                                     product.imageUrl!,
@@ -109,7 +106,9 @@ class _ProductListPageState extends State<ProductListPage> {
                                     errorBuilder: (c, e, s) => Container(
                                       color: Colors.grey[200],
                                       child: const Center(
-                                        child: Icon(Icons.broken_image_outlined),
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                        ),
                                       ),
                                     ),
                                   )

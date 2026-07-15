@@ -12,88 +12,50 @@ class ProductCombinedService {
   // --------------------------------------------------------------
   //  PUBLIC API
   // --------------------------------------------------------------
-  /// Home – hanya varian dengan price_list_code = NORMAL
+
+  /// Home – 1 card per PARENT produk (sama seperti getAllProducts).
   static Future<List<ProductUI>> getHomeProducts() async {
-    try {
-      final productRes = await http.get(
-        Uri.parse('$baseUrl/products'),
-        headers: {"Accept": "application/json"},
-      );
-      final priceRes = await http.get(
-        Uri.parse('$baseUrl/product-prices'),
-        headers: {"Accept": "application/json"},
-      );
-
-      if (productRes.statusCode != 200 || priceRes.statusCode != 200) {
-        print('❌ HOME API ERROR');
-        return [];
-      }
-
-      final List<dynamic> productJson = jsonDecode(productRes.body)['data'] ?? [];
-      final List<dynamic> priceJson   = jsonDecode(priceRes.body)['data'] ?? [];
-
-      // Lookup product → id
-      final Map<String, Map<String, dynamic>> productLookup = {};
-      for (final p in productJson) {
-        final map = Map<String, dynamic>.from(p as Map);
-        final id = _firstNonEmptyString(
-          map['id'],
-          map['product_id'],
-          map['productId'],
-        );
-        if (id.isNotEmpty) productLookup[id] = map;
-      }
-
-      final List<ProductUI> result = [];
-
-      for (final entry in priceJson) {
-        final priceMap = Map<String, dynamic>.from(entry as Map);
-        if (priceMap['price_list_code']?.toString().toUpperCase() != 'NORMAL')
-          continue;
-
-        final productId = _firstNonEmptyString(
-          priceMap['product_id'],
-          priceMap['productId'],
-          priceMap['id'],
-        );
-        final productData = productLookup[productId];
-        final ui = _buildHomeProductUi(priceMap, productData: productData);
-        if (ui != null) result.add(ui);
-      }
-
-      return result;
-    } catch (e) {
-      print('🔥 HOME PRODUCTS ERROR: $e');
-      return [];
-    }
+    return getAllProducts();
   }
 
-  /// Semua produk (meng‑gabungkan semua price‑list)
+  /// Semua produk – 1 card per PARENT produk, memakai varian "dasar"
+  /// (is_base_unit = 1, biasanya satuan pcs) untuk harga/stok yang
+  /// ditampilkan di listing. Varian lain dipilih lewat dropdown di detail.
   static Future<List<ProductUI>> getAllProducts() async {
     try {
-      final productRes = await http.get(
-        Uri.parse('$baseUrl/products'),
-        headers: {"Accept": "application/json"},
-      );
-      final priceRes = await http.get(
-        Uri.parse('$baseUrl/product-prices'),
-        headers: {"Accept": "application/json"},
-      );
+      final raw = await _fetchRaw();
+      if (raw == null) return [];
 
-      if (productRes.statusCode != 200 || priceRes.statusCode != 200) {
-        print('❌ API ERROR');
-        return [];
-      }
+      final products = raw['products']!;
+      final variants = raw['variants']!;
+      final prices = raw['prices']!;
 
-      final List<dynamic> productJson = jsonDecode(productRes.body)['data'] ?? [];
-      final List<dynamic> priceJson   = jsonDecode(priceRes.body)['data'] ?? [];
+      final pricesByVariant = _groupPricesByVariant(prices);
 
       final List<ProductUI> result = [];
 
-      for (final prod in productJson) {
-        final ui = _buildProductUi(
-          Map<String, dynamic>.from(prod as Map),
-          priceJson,
+      for (final p in products) {
+        final product = Map<String, dynamic>.from(p as Map);
+        final productId = product['id']?.toString() ?? '';
+        if (productId.isEmpty) continue;
+
+        final productVariants = variants
+            .map((v) => Map<String, dynamic>.from(v as Map))
+            .where((v) => v['product_id']?.toString() == productId)
+            .toList();
+
+        if (productVariants.isEmpty) continue; // tidak ada varian = tidak bisa dijual
+
+        // Varian dasar: prioritas is_base_unit == 1, kalau tidak ada pakai yang pertama.
+        final baseVariant = productVariants.firstWhere(
+          (v) => v['is_base_unit'] == 1 || v['is_base_unit'] == true,
+          orElse: () => productVariants.first,
+        );
+
+        final ui = _buildProductUiFromVariant(
+          product: product,
+          variant: baseVariant,
+          pricesByVariant: pricesByVariant,
         );
         if (ui != null) result.add(ui);
       }
@@ -106,272 +68,162 @@ class ProductCombinedService {
     }
   }
 
-  // --------------------------------------------------------------
-  //  PRIVATE HELPERS
-  // --------------------------------------------------------------
-
-  /// Resolves the **NORMAL** variant (digunakan untuk harga dasar,
-  /// stok, gambar, dll.).
-  static Map<String, dynamic> resolveBaseVariantEntry(
-    List<dynamic> prices,
-    Map<String, dynamic> product,
-  ) {
-    final productName = product['name']?.toString().toLowerCase() ?? '';
-    final productId   = product['id']?.toString() ?? '';
-
-    final related = prices.where((p) {
-      final variantName = p['product_variant_name']?.toString().toLowerCase() ?? '';
-      final pId          = p['product_id']?.toString() ?? '';
-      final vId          = p['product_variant_id']?.toString() ?? '';
-      final prodVId      = product['product_variant_id']?.toString() ?? '';
-
-      return variantName.startsWith(productName) ||
-          pId == productId ||
-          vId == prodVId ||
-          (pId.isNotEmpty && productId.isNotEmpty && pId.contains(productId)) ||
-          (productId.isNotEmpty && pId.isNotEmpty && productId.contains(pId));
-    }).toList();
-
-    if (related.isEmpty) return {};
-
-    // Urutkan supaya varian “pendek” (biasanya default) berada di atas.
-    related.sort((a, b) {
-      final aName = a['product_variant_name']?.toString() ?? '';
-      final bName = b['product_variant_name']?.toString() ?? '';
-      return aName.length.compareTo(bName.length);
-    });
-
-    // Prioritas: is_default → price_list_code = NORMAL → fallback pertama
+  /// Semua VARIAN milik satu produk (id + nama produk), masing-masing
+  /// dengan stok & harga MILIK VARIAN ITU SENDIRI (stock_qty per varian,
+  /// bukan ikut parent). Dipakai untuk dropdown di halaman detail.
+  static Future<List<ProductUI>> getProductVariants(
+    String productId,
+    String productName,
+  ) async {
     try {
-      return Map<String, dynamic>.from(
-        related.firstWhere(
-          (p) => p['is_default'] == true || p['isDefault'] == true,
-        ),
-      );
-    } catch (_) {}
+      final raw = await _fetchRaw();
+      if (raw == null) return [];
 
-    try {
-      return Map<String, dynamic>.from(
-        related.firstWhere(
-          (p) => p['price_list_code']?.toString().toUpperCase() == 'NORMAL',
-        ),
-      );
-    } catch (_) {}
+      final products = raw['products']!;
+      final variants = raw['variants']!;
+      final prices = raw['prices']!;
 
-    return Map<String, dynamic>.from(related.first);
+      final pricesByVariant = _groupPricesByVariant(prices);
+
+      Map<String, dynamic>? product;
+      for (final p in products) {
+        final map = Map<String, dynamic>.from(p as Map);
+        if (map['id']?.toString() == productId) {
+          product = map;
+          break;
+        }
+      }
+      if (product == null) return [];
+
+      final productVariants = variants
+          .map((v) => Map<String, dynamic>.from(v as Map))
+          .where((v) => v['product_id']?.toString() == productId)
+          .toList();
+
+      final List<ProductUI> result = [];
+      for (final variant in productVariants) {
+        final ui = _buildProductUiFromVariant(
+          product: product,
+          variant: variant,
+          pricesByVariant: pricesByVariant,
+        );
+        if (ui != null) result.add(ui);
+      }
+
+      return result;
+    } catch (e) {
+      print('🔥 VARIANTS ERROR: $e');
+      return [];
+    }
   }
 
   // --------------------------------------------------------------
-  //  Build UI object – Home (hanya variant NORMAL)
+  //  FETCH MENTAH (products + variants + prices)
   // --------------------------------------------------------------
-  static ProductUI? _buildHomeProductUi(
-    Map<String, dynamic> priceEntry, {
-    Map<String, dynamic>? productData,
-  }) {
-    if (priceEntry['price_list_code']?.toString().toUpperCase() != 'NORMAL')
+  static Future<Map<String, List<dynamic>>?> _fetchRaw() async {
+    final productRes = await http.get(
+      Uri.parse('$baseUrl/products'),
+      headers: {"Accept": "application/json"},
+    );
+    final variantRes = await http.get(
+      Uri.parse('$baseUrl/product-variants'), // ⚠️ cek/ganti kalau URL aslinya beda
+      headers: {"Accept": "application/json"},
+    );
+    final priceRes = await http.get(
+      Uri.parse('$baseUrl/product-prices'),
+      headers: {"Accept": "application/json"},
+    );
+
+    if (productRes.statusCode != 200 ||
+        variantRes.statusCode != 200 ||
+        priceRes.statusCode != 200) {
+      print(
+        '❌ API ERROR — products:${productRes.statusCode} '
+        'variants:${variantRes.statusCode} prices:${priceRes.statusCode}',
+      );
       return null;
+    }
 
-    final productId = _firstNonEmptyString(
-      priceEntry['product_id'],
-      priceEntry['productId'],
-      priceEntry['id'],
-      productData?['id'],
-      productData?['product_id'],
-      productData?['productId'],
-    );
+    final List<dynamic> productJson = jsonDecode(productRes.body)['data'] ?? [];
+    final List<dynamic> variantJson = jsonDecode(variantRes.body)['data'] ?? [];
+    final List<dynamic> priceJson   = jsonDecode(priceRes.body)['data'] ?? [];
 
-    final productName = _firstNonEmptyString(
-      productData?['name'],
-      priceEntry['product_name'],
-      priceEntry['name'],
-      priceEntry['product_variant_name'],
-    );
+    return {
+      'products': productJson,
+      'variants': variantJson,
+      'prices': priceJson,
+    };
+  }
 
-    final variantName = _firstNonEmptyString(
-      priceEntry['product_variant_name'],
-      productData?['variant_name'],
-      productData?['variantName'],
-    );
-
-    final int price = _parsePrice(
-      priceEntry['price'] ??
-          priceEntry['normal_price'] ??
-          priceEntry['base_price'] ??
-          priceEntry['price_value'] ??
-          productData?['price'] ??
-          productData?['base_price'] ??
-          productData?['price_value'],
-    );
-
-    final int stock = _parseInt(
-      priceEntry['stock'] ??
-          priceEntry['total_stock'] ??
-          priceEntry['quantity'] ??
-          priceEntry['available_stock'] ??
-          productData?['stock'] ??
-          productData?['total_stock'] ??
-          productData?['quantity'] ??
-          productData?['available_stock'],
-    );
-
-    final category = _normalizeCategory(
-      _firstNonEmptyString(
-        productData?['category_name'],
-        productData?['category'],
-        priceEntry['category_name'],
-        priceEntry['category'],
-      ),
-    );
-
-    final description = _firstNonEmptyString(
-      productData?['description'],
-      priceEntry['description'],
-    );
-
-    // Gambar (cek semua kemungkinan, tambahkan https: bila hanya //)
-    final String imageUrl = _extractImageUrl(productData ?? priceEntry);
-
-    return ProductUI(
-      id: productId,
-      name: productName,
-      category: category,
-      variantName: variantName,
-      description: description,
-      normalPrice: price,
-      memberPrice: price,
-      grosirPrice: price,
-      variantId: _firstNonEmptyString(
-        priceEntry['product_variant_id'],
-        priceEntry['variant_id'],
-        productData?['product_variant_id'],
-      ),
-      normalPriceListId: _firstNonEmptyString(
-        priceEntry['price_list_id'],
-        priceEntry['priceListId'],
-      ),
-      memberPriceListId: '',
-      grosirPriceListId: '',
-      grosirMinQty: 24,
-      stock: stock,
-      imageUrl: imageUrl,
-    );
+  /// Kelompokkan entry harga berdasarkan product_variant_id, supaya bisa
+  /// diambil cepat per varian.
+  static Map<String, List<Map<String, dynamic>>> _groupPricesByVariant(
+    List<dynamic> priceJson,
+  ) {
+    final Map<String, List<Map<String, dynamic>>> map = {};
+    for (final e in priceJson) {
+      final entry = Map<String, dynamic>.from(e as Map);
+      final variantId = entry['product_variant_id']?.toString() ?? '';
+      if (variantId.isEmpty) continue;
+      map.putIfAbsent(variantId, () => []).add(entry);
+    }
+    return map;
   }
 
   // --------------------------------------------------------------
-  //  Build UI object – All products (semua price‑list)
+  //  Build UI object dari 1 (product, variant) pair
   // --------------------------------------------------------------
-  static ProductUI? _buildProductUi(
-    Map<String, dynamic> product,
-    List<dynamic> allPrices,
-  ) {
-    final productName = product['name']?.toString().toLowerCase() ?? '';
-    final productId   = product['id']?.toString() ?? '';
+  static ProductUI? _buildProductUiFromVariant({
+    required Map<String, dynamic> product,
+    required Map<String, dynamic> variant,
+    required Map<String, List<Map<String, dynamic>>> pricesByVariant,
+  }) {
+    final variantId = variant['id']?.toString() ?? '';
+    final variantPrices = pricesByVariant[variantId] ?? [];
 
-    // Ambil semua price entry yang berhubungan dengan produk ini
-    final related = allPrices.where((p) {
-      final vName = p['product_variant_name']?.toString().toLowerCase() ?? '';
-      final pId   = p['product_id']?.toString() ?? '';
-      final vId   = p['product_variant_id']?.toString() ?? '';
-      final prodVId = product['product_variant_id']?.toString() ?? '';
+    if (variantPrices.isEmpty) return null; // tidak ada harga sama sekali
 
-      return vName.startsWith(productName) ||
-          pId == productId ||
-          vId == prodVId ||
-          (pId.isNotEmpty && productId.isNotEmpty && pId.contains(productId)) ||
-          (productId.isNotEmpty && pId.isNotEmpty && productId.contains(pId));
-    }).toList();
+    Map<String, dynamic> pickPrice(String code, Map<String, dynamic> fallback) {
+      return variantPrices.firstWhere(
+        (p) => p['price_list_code']?.toString().toUpperCase() == code,
+        orElse: () => fallback,
+      );
+    }
 
-    // ----------------------------------------------
-    // Base (NORMAL) variant – dipakai untuk stok & gambar
-    // ----------------------------------------------
-    final baseVariant = related.isEmpty
-        ? <String, dynamic>{}
-        : resolveBaseVariantEntry(related, product);
+    final normalEntry = pickPrice('NORMAL', variantPrices.first);
+    final memberEntry = pickPrice('MEMBER', normalEntry);
+    final grosirEntry = pickPrice('GROSIR', normalEntry);
 
-    // fallback bila tidak ada varian NORMAL
-    final fallback = related.isNotEmpty
-        ? Map<String, dynamic>.from(related.first as Map)
-        : <String, dynamic>{};
+    final int normalPrice = _parsePrice(normalEntry['price']);
+    final int memberPrice =
+        _parsePrice(memberEntry['price']) != 0 ? _parsePrice(memberEntry['price']) : normalPrice;
+    final int grosirPrice =
+        _parsePrice(grosirEntry['price']) != 0 ? _parsePrice(grosirEntry['price']) : normalPrice;
 
-    final normal = baseVariant.isEmpty ? fallback : baseVariant;
+    // STOK: langsung dari stock_qty milik VARIAN ini, bukan dari parent.
+    final int stock = _parseInt(variant['stock_qty']);
 
-    // ----------------------------------------------
-    // Harga khusus: MEMBER & GROSIR
-    // ----------------------------------------------
-    final member = related.firstWhere(
-          (p) => p['price_list_code']?.toString().toUpperCase() == 'MEMBER',
-        orElse: () => normal.isEmpty ? fallback : normal,
-    );
-
-    final grosir = related.firstWhere(
-          (p) => p['price_list_code']?.toString().toUpperCase() == 'GROSIR',
-        orElse: () => normal.isEmpty ? fallback : normal,
-    );
-
-    // ----------------------------------------------
-    // Helper konversi harga
-    // ----------------------------------------------
-    int _priceFrom(dynamic src) => _parsePrice(src);
-    final int normalPrice = _priceFrom(normal['price']) != 0
-        ? _priceFrom(normal['price'])
-        : _priceFrom(product['price']) != 0
-            ? _priceFrom(product['price'])
-            : 0;
-
-    final int memberPrice = _priceFrom(member['price']) != 0
-        ? _priceFrom(member['price'])
-        : normalPrice;
-
-    final int grosirPrice = _priceFrom(grosir['price']) != 0
-        ? _priceFrom(grosir['price'])
-        : normalPrice;
-
-    // ----------------------------------------------
-    // Stok – coba ambil dari NORMAL, bila tidak ada coba dari
-    // field lain yang mungkin ada.
-    // ----------------------------------------------
-    final int stock = _parseInt(
-      normal['stock'] ??
-          normal['total_stock'] ??
-          normal['quantity'] ??
-          normal['available_stock'] ??
-          product['stock'] ??
-          product['total_stock'] ??
-          product['quantity'] ??
-          product['available_stock'] ??
-          0,
-    );
-
-    // ----------------------------------------------
-    // Gambar
-    // ----------------------------------------------
-    final String imageUrl = _extractImageUrl(product);
-
-    // ----------------------------------------------
-    // Return UI object
-    // ----------------------------------------------
     return ProductUI(
       id: product['id']?.toString() ?? '',
       name: product['name']?.toString() ?? '',
       category: _normalizeCategory(product['category_name']),
-      variantName: normal['product_variant_name']?.toString() ?? '',
+      variantName: variant['name']?.toString() ?? '',
       description: product['description']?.toString() ?? '',
       normalPrice: normalPrice,
       memberPrice: memberPrice,
       grosirPrice: grosirPrice,
-      variantId: normal['product_variant_id']?.toString() ?? '',
-      normalPriceListId: normal['price_list_id']?.toString() ?? '',
-      memberPriceListId: member['price_list_id']?.toString() ?? '',
-      grosirPriceListId: grosir['price_list_id']?.toString() ?? '',
-      grosirMinQty:
-          int.tryParse(grosir['min_qty']?.toString() ?? '24') ?? 24,
+      variantId: variantId,
+      normalPriceListId: normalEntry['price_list_id']?.toString() ?? '',
+      memberPriceListId: memberEntry['price_list_id']?.toString() ?? '',
+      grosirPriceListId: grosirEntry['price_list_id']?.toString() ?? '',
+      grosirMinQty: int.tryParse(grosirEntry['min_qty']?.toString() ?? '24') ?? 24,
       stock: stock,
-      imageUrl: imageUrl,
+      imageUrl: _extractImageUrl(product),
     );
   }
 
   // --------------------------------------------------------------
-  //  Normalisasi kategori (menyederhanakan string)
+  //  Normalisasi kategori
   // --------------------------------------------------------------
   static String _normalizeCategory(dynamic raw) {
     final cat = raw?.toString().toLowerCase() ?? '';
@@ -400,26 +252,6 @@ class ProductCombinedService {
   // --------------------------------------------------------------
   //  Helper umum
   // --------------------------------------------------------------
-  static String _firstNonEmptyStringFromList(List<dynamic> values) {
-    for (final v in values) {
-      final s = v?.toString().trim() ?? '';
-      if (s.isNotEmpty) return s;
-    }
-    return '';
-  }
-
-  static String _firstNonEmptyString(
-    Object? v1, [
-    Object? v2,
-    Object? v3,
-    Object? v4,
-    Object? v5,
-    Object? v6,
-  ]) {
-    return _firstNonEmptyStringFromList([v1, v2, v3, v4, v5, v6]);
-  }
-
-  /// Parse integer – mengabaikan titik/koma serta spasi.
   static int _parseInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -433,9 +265,7 @@ class ProductCombinedService {
     return int.tryParse(txt) ?? 0;
   }
 
-  /// **Perbaikan utama** – menangani harga yang mungkin berupa
-  ///  * 12.500 (titik = ribuan) → 12500
-  ///  * 125.00 (titik = desimal) → 125
+  /// Menangani harga string seperti "3500.00" (desimal, bukan ribuan).
   static int _parsePrice(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -448,34 +278,29 @@ class ProductCombinedService {
 
     if (cleaned.contains('.')) {
       final parts = cleaned.split('.');
-      // Jika ada dua digit di belakang titik → dianggap desimal
       if (parts.length == 2 && parts[1].length == 2) {
-        cleaned = parts[0]; // buang desimal sepenuhnya
+        cleaned = parts[0]; // desimal, buang
       } else {
-        // Titik = ribuan
-        cleaned = cleaned.replaceAll('.', '');
+        cleaned = cleaned.replaceAll('.', ''); // titik = ribuan
       }
     }
 
     return int.tryParse(cleaned) ?? 0;
   }
 
-  /// **Ekstrak gambar** dari semua struktur yang mungkin.
-  /// - List `images` → ambil `url` dari elemen pertama.
-  /// - Field tunggal: `image_url`, `imageUrl`, `image`, `thumbnail`, `photo`.
-  /// - Jika URL dimulai dengan `//` → tambahkan `https:`.
   static String _extractImageUrl(Map<String, dynamic> data) {
-    // 1️⃣ List of images
     final images = data['images'];
     if (images is List && images.isNotEmpty) {
-      final first = images.first;
-      if (first is Map) {
-        final url = first['url'] ?? first['image'] ?? first['src'];
+      final primary = images.firstWhere(
+        (img) => img is Map && img['is_primary'] == true,
+        orElse: () => images.first,
+      );
+      if (primary is Map) {
+        final url = primary['url'] ?? primary['image'] ?? primary['src'];
         if (url != null) return _fixScheme(url.toString());
       }
     }
 
-    // 2️⃣ Direct fields
     final candidates = [
       data['image_url'],
       data['imageUrl'],
@@ -489,11 +314,9 @@ class ProductCombinedService {
       }
     }
 
-    // 3️⃣ Tidak ada gambar → kosong
     return '';
   }
 
-  /// Tambahkan scheme `https:` bila URL dimulai dengan `//`.
   static String _fixScheme(String url) {
     if (url.startsWith('//')) return 'https:$url';
     return url;
