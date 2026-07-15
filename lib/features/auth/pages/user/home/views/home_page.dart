@@ -5,6 +5,7 @@ import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_section_title.dart';
 import 'package:senkuko/core/widgets/app_textfield.dart';
 import 'package:senkuko/features/auth/pages/user/home/views/category_product_page.dart';
+import 'package:senkuko/features/auth/pages/user/home/views/search_product_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/models/product_ui_model.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_combined_service.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_image_service.dart';
@@ -195,11 +196,17 @@ class _HomePageState extends State<HomePage> {
                             color: AppColors.card,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: AppTextField(
-                            controller: searchController,
-                            hint: "Cari produk...",
-                            icon: Icons.search,
-                            onChanged: searchProduct,
+                          child: GestureDetector(
+                            onTap: () {
+                              Get.to(() => const SearchProductPage());
+                            },
+                            child: AbsorbPointer(
+                              child: AppTextField(
+                                controller: searchController,
+                                hint: "Cari produk...",
+                                icon: Icons.search,
+                              ),
+                            ),
                           ),
                         ),
                       ),

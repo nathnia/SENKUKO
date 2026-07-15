@@ -219,14 +219,59 @@ class CheckoutController extends GetxController {
     final code = promoController.text.trim().toUpperCase();
     if (code.isEmpty) return;
 
-    if (!promoCodes.contains(code)) promoCodes.add(code);
-    promoController.clear();
+    // Coba preview pada server dengan memasukkan kode baru.
+    try {
+      isLoading.value = true;
 
-    await previewDiscounts(
-      subtotal: subtotal,
-      items: items,
-      priceListId: priceListId,
-    );
+      // Susun daftar promo sementara (existing + candidate)
+      final List<String> trialPromos = promoCodes.isNotEmpty
+          ? (promoCodes.toList()..add(code))
+          : [code];
+
+      // Panggil endpoint preview untuk memeriksa apakah kode diterapkan
+      final response = await TransactionService.createTransaction(
+        items: items,
+        paymentMethod: paymentMethod.value,
+        address: addressController.text.trim(),
+        city: cityController.text.trim(),
+        region: regionController.text.trim(),
+        subregion: subregionController.text.trim(),
+        note: noteController.text.trim(),
+        promoCodes: trialPromos,
+        voucherCodes: voucherCodes.toList(),
+        priceListId: priceListId,
+        previewOnly: true,
+      );
+
+      if (response == null) {
+        Get.snackbar('Kode Promo', 'Kode tidak valid atau preview gagal.', snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final data = response['data'] ?? response;
+      final List applied = (data['applied_promotions'] as List?) ?? [];
+
+      // Hitung total potongan promo dari response preview
+      int promoFromResp = 0;
+      for (final entry in applied) {
+        final type = (entry['discount_type'] ?? 'promo').toString().toLowerCase();
+        final amount = (entry['discount_amount'] as num?)?.toInt() ?? 0;
+        if (type != 'voucher') promoFromResp += amount;
+      }
+
+      // Jika potongan promo bertambah, anggap kode berhasil diterapkan
+      if (promoFromResp > promoDiscountAmount.value) {
+        if (!promoCodes.contains(code)) promoCodes.add(code);
+        promoController.clear();
+        await previewDiscounts(subtotal: subtotal, items: items, priceListId: priceListId);
+      } else {
+        Get.snackbar('Kode Promo', 'Kode tidak valid atau tidak berlaku untuk pesanan ini.', snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('Kode Promo', 'Terjadi kesalahan: $e', snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> applyVoucher({
@@ -237,14 +282,55 @@ class CheckoutController extends GetxController {
     final code = voucherController.text.trim().toUpperCase();
     if (code.isEmpty) return;
 
-    if (!voucherCodes.contains(code)) voucherCodes.add(code);
-    voucherController.clear();
+    // Coba preview pada server dengan memasukkan kode voucher baru.
+    try {
+      isLoading.value = true;
 
-    await previewDiscounts(
-      subtotal: subtotal,
-      items: items,
-      priceListId: priceListId,
-    );
+      final List<String> trialVouchers = voucherCodes.isNotEmpty
+          ? (voucherCodes.toList()..add(code))
+          : [code];
+
+      final response = await TransactionService.createTransaction(
+        items: items,
+        paymentMethod: paymentMethod.value,
+        address: addressController.text.trim(),
+        city: cityController.text.trim(),
+        region: regionController.text.trim(),
+        subregion: subregionController.text.trim(),
+        note: noteController.text.trim(),
+        promoCodes: promoCodes.toList(),
+        voucherCodes: trialVouchers,
+        priceListId: priceListId,
+        previewOnly: true,
+      );
+
+      if (response == null) {
+        Get.snackbar('Kode Voucher', 'Kode tidak valid atau preview gagal.', snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      final data = response['data'] ?? response;
+      final List applied = (data['applied_promotions'] as List?) ?? [];
+
+      int voucherFromResp = 0;
+      for (final entry in applied) {
+        final type = (entry['discount_type'] ?? 'promo').toString().toLowerCase();
+        final amount = (entry['discount_amount'] as num?)?.toInt() ?? 0;
+        if (type == 'voucher') voucherFromResp += amount;
+      }
+
+      if (voucherFromResp > voucherDiscountAmount.value) {
+        if (!voucherCodes.contains(code)) voucherCodes.add(code);
+        voucherController.clear();
+        await previewDiscounts(subtotal: subtotal, items: items, priceListId: priceListId);
+      } else {
+        Get.snackbar('Kode Voucher', 'Kode tidak valid atau tidak berlaku untuk pesanan ini.', snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('Kode Voucher', 'Terjadi kesalahan: $e', snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> removePromoCode(
@@ -445,7 +531,7 @@ class CheckoutController extends GetxController {
           return;
         }
 
-        final String? paymentStatus = (statusResult["payment_status"] ??
+        final String paymentStatus = (statusResult["payment_status"] ??
                 statusResult["status"])
             .toString()
             .toLowerCase();

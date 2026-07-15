@@ -21,11 +21,8 @@ class CheckoutPage extends StatefulWidget {
   /// proses checkout harus meng‑update status keranjang.
   final bool isFromCart;
 
-  const CheckoutPage({
-    Key? key,
-    this.directItems,
-    this.isFromCart = false,
-  }) : super(key: key);
+  const CheckoutPage({Key? key, this.directItems, this.isFromCart = false})
+    : super(key: key);
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
