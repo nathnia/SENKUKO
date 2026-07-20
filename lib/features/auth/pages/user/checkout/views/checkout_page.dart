@@ -90,8 +90,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
   int _currentTotal() => _checkout.totalPrice.value > 0
       ? _checkout.totalPrice.value
       : _subtotal -
-            _checkout.promoDiscountAmount.value -
-            _checkout.voucherDiscountAmount.value;
+          _checkout.promoDiscountAmount.value -
+          _checkout.voucherDiscountAmount.value;
 
   String _formatRupiah(int price) => _currencyFormatter.format(price);
 
@@ -167,7 +167,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           // 3️⃣ Bottom bar – total + tombol bayar
           // -----------------------------------------------------------------
           _BottomBar(
-            checkout: _checkout,
+            total: _currentTotal(),
             format: _formatRupiah,
             isLoading: _checkout.isLoading,
             onPayPressed: () {
@@ -202,20 +202,23 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
 
-  const _SectionHeader({Key? key, required this.icon, required this.title})
-    : super(key: key);
+  const _SectionHeader({
+    Key? key,
+    required this.icon,
+    required this.title,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Row(
-    children: [
-      Icon(icon, color: Colors.green),
-      const SizedBox(width: 8),
-      Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-      ),
-    ],
-  );
+        children: [
+          Icon(icon, color: Colors.green),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ],
+      );
 }
 
 // ---------------------------------------------------------------------
@@ -239,10 +242,7 @@ class _ShippingAddressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(
-            icon: Icons.location_on,
-            title: 'Alamat Pengiriman',
-          ),
+          const _SectionHeader(icon: Icons.location_on, title: 'Alamat Pengiriman'),
           const SizedBox(height: 16),
 
           // Nama & No. Telepon (dari storage)
@@ -308,8 +308,7 @@ class _ShippingAddressCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () =>
-                            checkout.isEditingAddress.value = false,
+                        onPressed: () => checkout.isEditingAddress.value = false,
                         child: const Text('Simpan'),
                       ),
                     ),
@@ -349,11 +348,9 @@ class _ProductListCard extends StatelessWidget {
 
   const _ProductListCard({Key? key, required this.items}) : super(key: key);
 
-  String _formatRupiah(int price) => NumberFormat.currency(
-    locale: 'id_ID',
-    symbol: 'Rp ',
-    decimalDigits: 0,
-  ).format(price);
+  String _formatRupiah(int price) =>
+      NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
+          .format(price);
 
   @override
   Widget build(BuildContext context) {
@@ -441,8 +438,7 @@ class _ProductListCard extends StatelessWidget {
 class _PaymentMethodCard extends StatelessWidget {
   final CheckoutController checkout;
 
-  const _PaymentMethodCard({Key? key, required this.checkout})
-    : super(key: key);
+  const _PaymentMethodCard({Key? key, required this.checkout}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -466,8 +462,7 @@ class _PaymentMethodCard extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: isSelected ? Colors.green : Colors.grey.shade300,
-                    ),
+                        color: isSelected ? Colors.green : Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: RadioListTile<String>(
@@ -618,19 +613,19 @@ class _CodeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TextField(
-    controller: controller,
-    onSubmitted: (_) => onApplied(),
-    decoration: InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      suffixIcon: TextButton(
-        onPressed: onApplied,
-        child: const Text('Terapkan'),
-      ),
-    ),
-  );
+        controller: controller,
+        onSubmitted: (_) => onApplied(),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: Icon(icon),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: TextButton(
+            onPressed: onApplied,
+            child: const Text('Terapkan'),
+          ),
+        ),
+      );
 }
 
 // ---------------------------------------------------------------------
@@ -667,30 +662,15 @@ class _SummaryCard extends StatelessWidget {
             final int voucherDisc = checkout.voucherDiscountAmount.value;
             return Column(
               children: [
-                _PriceRow(
-                  label: 'Diskon Promo',
-                  amount: promoDisc,
-                  format: format,
-                ),
+                _PriceRow(label: 'Diskon Promo', amount: promoDisc, format: format),
                 const SizedBox(height: 8),
-                _PriceRow(
-                  label: 'Diskon Voucher',
-                  amount: voucherDisc,
-                  format: format,
-                ),
+                _PriceRow(label: 'Diskon Voucher', amount: voucherDisc, format: format),
               ],
             );
           }),
 
           const Divider(height: 24, thickness: 1),
-          Obx(() {
-            return _PriceRow(
-              label: 'Total Pembayaran',
-              amount: checkout.totalPrice.value,
-              format: format,
-              isTotal: true,
-            );
-          }),
+          _PriceRow(label: 'Total Pembayaran', amount: total, format: format, isTotal: true),
         ],
       ),
     );
@@ -740,14 +720,14 @@ class _PriceRow extends StatelessWidget {
 // 12️⃣ Bottom Bar (total + tombol bayar)
 // ---------------------------------------------------------------------
 class _BottomBar extends StatelessWidget {
-  final CheckoutController checkout;
+  final int total;
   final String Function(int) format;
   final RxBool isLoading;
   final VoidCallback onPayPressed;
 
   const _BottomBar({
     Key? key,
-    required this.checkout,
+    required this.total,
     required this.format,
     required this.isLoading,
     required this.onPayPressed,
@@ -755,51 +735,49 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black12)],
-    ),
-    child: SafeArea(
-      top: false,
-      child: Row(
-        children: [
-          // ----- Total -----
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Total', style: TextStyle(color: Colors.grey)),
-                Obx(
-                  () => Text(
-                    format(checkout.totalPrice.value),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black12)],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              // ----- Total -----
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Total', style: TextStyle(color: Colors.grey)),
+                    Text(
+                      format(total),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              // ----- Tombol Bayar -----
+              SizedBox(
+                width: 170,
+                height: 50,
+                child: Obx(() {
+                  if (isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return AppButton(
+                    text: 'Bayar ${format(total)}',
+                    onPressed: onPayPressed,
+                  );
+                }),
+              ),
+            ],
           ),
-          // ----- Tombol Bayar -----
-          SizedBox(
-            width: 170,
-            height: 50,
-            child: Obx(() {
-              if (isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return AppButton(
-                text: 'Bayar ${format(checkout.totalPrice.value)}',
-                onPressed: onPayPressed,
-              );
-            }),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
