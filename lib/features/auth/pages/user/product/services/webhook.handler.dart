@@ -4,10 +4,11 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:senkuko/features/auth/pages/user/history/controller/history_controller.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WebhookHandler {
-  static const String baseUrl =
-      "https://nonflaky-predoubtfully-kayleigh.ngrok-free.app";
+  static final String baseUrl =
+      dotenv.env['BASE_URL']!;
 
   // Handle Midtrans Webhook
   static Future<void> handleMidtransWebhook(Map<String, dynamic> payload) async {

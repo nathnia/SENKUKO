@@ -1,17 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/product_ui_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ProductCombinedService {
-  // --------------------------------------------------------------
-  // Base URL (ubah bila pindah ke production)
-  // --------------------------------------------------------------
-  static const String baseUrl =
-      'https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev/api';
-
-  // --------------------------------------------------------------
-  //  PUBLIC API
-  // --------------------------------------------------------------
+  static final String baseUrl =
+      dotenv.env['BASE_URL']!;
 
   /// Home – 1 card per PARENT produk (sama seperti getAllProducts).
   static Future<List<ProductUI>> getHomeProducts() async {

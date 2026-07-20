@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
-  static const String baseUrl =
-      "https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev";
+  static final String baseUrl =
+      dotenv.env['BASE_URL']!;
 
   static Future<Map<String, dynamic>> login({
   required String code,

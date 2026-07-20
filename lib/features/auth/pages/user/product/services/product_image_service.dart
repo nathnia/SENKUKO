@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ProductImageService {
-  static const String baseUrl =
-      "https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev/api";
+  static final String baseUrl =
+      dotenv.env['BASE_URL']!;
 
   static Future<String?> getProductImage(String productId) async {
     try {

@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/category_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CategoryService {
-  static const baseUrl = 'https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev/api';
+  static final String baseUrl =
+      dotenv.env['BASE_URL']!;
 
   static Future<List<Category>> getCategories() async {
     try {
