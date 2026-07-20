@@ -2,16 +2,14 @@
 import 'dart:convert';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// ---------------------------------------------------------------------------
 /// Service yang berkomunikasi dengan endpoint `/api/transactions`.
 /// ---------------------------------------------------------------------------
 class TransactionService {
-  // -------------------------------------------------------------------------
-  // 1️⃣  Base URL (ganti dengan URL sebenarnya bila production)
-  // -------------------------------------------------------------------------
-  static const String baseUrl =
-      "https://nonflaky-predoubtfully-kayleigh.ngrok-free.dev";
+  static final String baseUrl =
+      dotenv.env['BASE_URL']!;
 
   // -------------------------------------------------------------------------
   // 2️⃣  CREATE / PREVIEW TRANSACTION
