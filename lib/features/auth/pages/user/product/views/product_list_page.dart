@@ -5,7 +5,13 @@ import 'package:senkuko/features/auth/pages/user/product/services/product_combin
 import 'package:senkuko/features/auth/pages/user/product/views/product_detail_page.dart';
 
 class ProductListPage extends StatefulWidget {
-  const ProductListPage({super.key});
+
+  final String? keyword;
+
+  const ProductListPage({
+    super.key,
+    this.keyword,
+  });
 
   @override
   State<ProductListPage> createState() => _ProductListPageState();
@@ -28,10 +34,25 @@ class _ProductListPageState extends State<ProductListPage> {
       final data = await ProductCombinedService.getAllProducts();
       if (!mounted) return;
 
-      setState(() {
-        products = data;
-        isLoading = false;
-      });
+      List<ProductUI> result = data;
+
+if (widget.keyword != null &&
+    widget.keyword!.trim().isNotEmpty) {
+
+  result = data.where((e) {
+
+    return e.name.toLowerCase().contains(
+      widget.keyword!.toLowerCase(),
+    );
+
+  }).toList();
+
+}
+
+setState(() {
+  products = result;
+  isLoading = false;
+});
     } catch (e) {
       if (mounted) setState(() => isLoading = false);
     }

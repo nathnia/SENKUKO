@@ -116,15 +116,15 @@ class ProductCombinedService {
   // --------------------------------------------------------------
   static Future<Map<String, List<dynamic>>?> _fetchRaw() async {
     final productRes = await http.get(
-      Uri.parse('$baseUrl/products'),
+      Uri.parse('$baseUrl/api/products'),
       headers: {"Accept": "application/json"},
     );
     final variantRes = await http.get(
-      Uri.parse('$baseUrl/product-variants'), // ⚠️ cek/ganti kalau URL aslinya beda
+      Uri.parse('$baseUrl/api/product-variants'), // ⚠️ cek/ganti kalau URL aslinya beda
       headers: {"Accept": "application/json"},
     );
     final priceRes = await http.get(
-      Uri.parse('$baseUrl/product-prices'),
+      Uri.parse('$baseUrl/api/product-prices'),
       headers: {"Accept": "application/json"},
     );
 
