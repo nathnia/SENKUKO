@@ -12,6 +12,7 @@ import 'package:senkuko/features/auth/pages/user/product/services/product_image_
 import 'package:senkuko/features/auth/pages/user/product/views/product_detail_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/views/product_list_page.dart';
 import 'package:senkuko/features/auth/pages/user/promo/views/promo_page.dart';
+import 'package:senkuko/features/auth/pages/user/promo/data/promo_banner_data.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -251,7 +252,10 @@ class _HomePageState extends State<HomePage> {
                                   setState(() => currentPage = i);
                                 }
                               },
-                              children: [banner(), banner(), banner()],
+                              children: List.generate(
+                                promoBanners.length,
+                                (index) => banner(index),
+                              ),
                             ),
                           ),
 
@@ -260,7 +264,7 @@ class _HomePageState extends State<HomePage> {
                           //DOT
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(3, (i) {
+                            children: List.generate(promoBanners.length, (i) {
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 margin: const EdgeInsets.symmetric(
@@ -546,66 +550,95 @@ class _HomePageState extends State<HomePage> {
   }
 
   //BANNER PRO
-  Widget banner() {
-    return GestureDetector(
-      onTap: () {
-        if (mounted) {
-          Get.to(() => const PromoPage());
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.primary, AppColors.primaryDark],
-          ),
-          borderRadius: BorderRadius.circular(18),
+  Widget banner(int index) {
+  final promo = promoBanners[index];
+
+  return GestureDetector(
+    onTap: () {
+      Get.to(() => const PromoPage());
+    },
+    child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: promo.colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "Promo Spesial",
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Stack(
+        children: [
 
-              const SizedBox(height: 8),
+          Positioned(
+            right: -20,
+            top: -10,
+            child: Icon(
+              promo.icon,
+              size: 120,
+              color: Colors.white.withOpacity(.15),
+            ),
+          ),
 
-              const Text(
-                "Diskon Hingga 50%",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-              const SizedBox(height: 8),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Text(
-                  "Lihat Promo",
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+                Text(
+                  promo.title,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 10),
+
+                Text(
+                  promo.subtitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 23,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  promo.description,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                  ),
+                ),
+
+                const Spacer(),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Text(
+                    "Lihat Promo",
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  );
   }
 }
