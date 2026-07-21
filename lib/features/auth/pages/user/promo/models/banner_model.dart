@@ -1,17 +1,30 @@
 import 'package:flutter/material.dart';
 
-class PromoBannerModel {
+enum BannerType {
+  promo,
+  product,
+  category,
+}
+
+class BannerModel {
   final String title;
   final String subtitle;
   final String description;
-  final IconData icon;
+
+  final BannerType type;
+  final String keyword;
+
   final List<Color> colors;
 
-  PromoBannerModel({
+  final IconData icon;
+
+  const BannerModel({
     required this.title,
     required this.subtitle,
     required this.description,
-    required this.icon,
+    required this.type,
+    required this.keyword,
     required this.colors,
+    required this.icon,
   });
 }

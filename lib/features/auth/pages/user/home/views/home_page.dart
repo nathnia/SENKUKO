@@ -12,7 +12,9 @@ import 'package:senkuko/features/auth/pages/user/product/services/product_image_
 import 'package:senkuko/features/auth/pages/user/product/views/product_detail_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/views/product_list_page.dart';
 import 'package:senkuko/features/auth/pages/user/promo/views/promo_page.dart';
-import 'package:senkuko/features/auth/pages/user/promo/data/promo_banner_data.dart';
+import 'package:senkuko/features/auth/pages/user/promo/data/banner_data.dart';
+import 'package:senkuko/features/auth/pages/user/promo/models/banner_model.dart';
+import 'package:senkuko/features/auth/pages/user/voucher/views/voucher_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -243,7 +245,7 @@ class _HomePageState extends State<HomePage> {
 
                           //BANNER PRO
                           SizedBox(
-                            height: 165,
+                            height: 190,
                             child: PageView(
                               controller: controller,
                               onPageChanged: (i) {
@@ -253,7 +255,7 @@ class _HomePageState extends State<HomePage> {
                                 }
                               },
                               children: List.generate(
-                                promoBanners.length,
+                                bannerData.length,
                                 (index) => banner(index),
                               ),
                             ),
@@ -264,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                           //DOT
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(promoBanners.length, (i) {
+                            children: List.generate(bannerData.length, (i) {
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 margin: const EdgeInsets.symmetric(
@@ -329,17 +331,18 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 20),
 
                           AppSectionTitle(
-                            title: "Untuk Anda",
+                            title: "Voucher",
                             onTap: () {
-                              Get.to(() => const ProductListPage());
+                              Get.to(() => const VoucherPage());
                             },
                           ),
 
                           const SizedBox(height: 10),
 
-                          productList(recommendedProducts),
-
-                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: 190,
+                            child: const VoucherPage(isHome: true),
+                          ),
                         ],
                       ),
                     ),
@@ -551,94 +554,145 @@ class _HomePageState extends State<HomePage> {
 
   //BANNER PRO
   Widget banner(int index) {
-  final promo = promoBanners[index];
+    final promo = bannerData[index];
 
-  return GestureDetector(
-    onTap: () {
-      Get.to(() => const PromoPage());
-    },
-    child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: promo.colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Stack(
-        children: [
-
-          Positioned(
-            right: -20,
-            top: -10,
-            child: Icon(
-              promo.icon,
-              size: 120,
-              color: Colors.white.withOpacity(.15),
-            ),
+    return GestureDetector(
+      onTap: () {
+        if (promo.type == BannerType.promo) {
+          Get.to(() => const PromoPage());
+        } else if (promo.type == BannerType.product) {
+          Get.to(() => ProductListPage(keyword: promo.keyword));
+        } else if (promo.type == BannerType.category) {
+          Get.to(() => CategoryProductsPage(category: promo.keyword));
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: promo.colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                Text(
-                  promo.title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Stack(
+          children: [
+            // Lingkaran background
+            Positioned(
+              right: -40,
+              bottom: -40,
+              child: Container(
+                width: 170,
+                height: 170,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(.08),
                 ),
+              ),
+            ),
 
-                const SizedBox(height: 10),
+            // Icon besar
+            Positioned(
+              right: 15,
+              top: 15,
+              child: Icon(
+                promo.icon,
+                size: 90,
+                color: Colors.white.withOpacity(.20),
+              ),
+            ),
 
-                Text(
-                  promo.subtitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 23,
-                  ),
-                ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  promo.description,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                  ),
-                ),
-
-                const Spacer(),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Text(
-                    "Lihat Promo",
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.18),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Text(
+                      "🔥 TERBATAS",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    promo.title,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    promo.subtitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 23,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    promo.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+
+                  const Spacer(),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          "Lihat Sekarang",
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        SizedBox(width: 6),
+
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Colors.black87,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }
