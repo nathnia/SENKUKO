@@ -30,6 +30,10 @@ class TransactionDetailController extends GetxController {
     loadDetail(id.toString());
   }
 
+  // ============================================================
+  // LOAD DETAIL TRANSAKSI
+  // ============================================================
+
   Future<void> loadDetail(String id) async {
     try {
       isLoading.value = true;
@@ -51,6 +55,7 @@ class TransactionDetailController extends GetxController {
           "Error",
           "Data transaksi tidak ditemukan.",
         );
+
         return;
       }
 
@@ -71,6 +76,10 @@ class TransactionDetailController extends GetxController {
     }
   }
 
+  // ============================================================
+  // FORMAT RUPIAH
+  // ============================================================
+
   String rupiah(dynamic value) {
     double number = 0;
 
@@ -83,6 +92,10 @@ class TransactionDetailController extends GetxController {
           (m) => "${m[1]}.",
         )}";
   }
+
+  // ============================================================
+  // STATUS TRANSAKSI
+  // ============================================================
 
   String statusText(String status) {
     switch (status.toLowerCase()) {
@@ -114,6 +127,10 @@ class TransactionDetailController extends GetxController {
     }
   }
 
+  // ============================================================
+  // STATUS PEMBAYARAN
+  // ============================================================
+
   String paymentStatusText(String status) {
     switch (status.toLowerCase()) {
       case "paid":
@@ -121,6 +138,10 @@ class TransactionDetailController extends GetxController {
 
       case "pending":
         return "Belum Dibayar";
+
+      case "cancelled":
+      case "cancel":
+        return "Dibatalkan";
 
       case "failed":
         return "Gagal";
@@ -133,6 +154,10 @@ class TransactionDetailController extends GetxController {
     }
   }
 
+  // ============================================================
+  // FORMAT DATE
+  // ============================================================
+
   String formatDate(String date) {
     try {
       final d = DateTime.parse(date);
@@ -144,6 +169,126 @@ class TransactionDetailController extends GetxController {
           "${d.minute.toString().padLeft(2, '0')}";
     } catch (_) {
       return date;
+    }
+  }
+
+  // ============================================================
+  // CEK BOLEH CANCEL ATAU TIDAK
+  // ============================================================
+
+  bool get canCancelTransaction {
+    final transaction = detail.value;
+
+    if (transaction == null) return false;
+
+    final status = transaction["status"]?.toString().toLowerCase();
+
+    final paymentStatus = transaction["payment_status"]
+        ?.toString()
+        .toLowerCase();
+
+    return status == "pending_payment" &&
+        paymentStatus == "pending";
+  }
+
+  // ============================================================
+  // CANCEL TRANSACTION
+  // ============================================================
+
+  Future<void> cancelTransaction() async {
+    final transaction = detail.value;
+
+    if (transaction == null) {
+      Get.snackbar(
+        "Error",
+        "Data transaksi tidak ditemukan.",
+      );
+
+      return;
+    }
+
+    final transactionId = transaction["id"]?.toString();
+
+    if (transactionId == null || transactionId.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "ID transaksi tidak ditemukan.",
+      );
+
+      return;
+    }
+
+    if (!canCancelTransaction) {
+      Get.snackbar(
+        "Tidak Dapat Dibatalkan",
+        "Transaksi ini sudah tidak dapat dibatalkan.",
+      );
+
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+
+      final result = await HistoryService.cancelTransaction(
+        transactionId,
+      );
+
+      if (result == null) {
+        Get.snackbar(
+          "Gagal",
+          "Transaksi tidak dapat dibatalkan.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        return;
+      }
+
+      print("==================================");
+      print("CANCEL SUCCESS");
+      print(result);
+      print("==================================");
+
+      // ============================================================
+      // PENTING
+      //
+      // Jangan langsung:
+      //
+      // detail.value = result;
+      //
+      // Karena response cancel hanya data ringkas dan tidak memiliki
+      // field items.
+      //
+      // Kita gabungkan response cancel dengan detail lama.
+      // ============================================================
+
+      final currentDetail = Map<String, dynamic>.from(
+        detail.value!,
+      );
+
+      currentDetail.addAll(result);
+
+      detail.value = currentDetail;
+
+      Get.snackbar(
+        "Berhasil",
+        "Transaksi berhasil dibatalkan.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e, stackTrace) {
+      print("==================================");
+      print("CANCEL CONTROLLER ERROR");
+      print(e);
+      print(stackTrace);
+      print("==================================");
+
+      Get.snackbar(
+        "Error",
+        "Terjadi kesalahan saat membatalkan transaksi.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 }

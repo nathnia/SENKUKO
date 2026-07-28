@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -11,9 +12,9 @@ import 'package:senkuko/features/auth/pages/user/product/services/product_combin
 import 'package:senkuko/features/auth/pages/user/product/services/product_image_service.dart';
 import 'package:senkuko/features/auth/pages/user/product/views/product_detail_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/views/product_list_page.dart';
-import 'package:senkuko/features/auth/pages/user/promo/views/promo_page.dart';
-import 'package:senkuko/features/auth/pages/user/promo/data/banner_data.dart';
+import 'package:senkuko/features/auth/pages/user/promo/services/banner_service.dart';
 import 'package:senkuko/features/auth/pages/user/promo/models/banner_model.dart';
+import 'package:senkuko/features/auth/pages/user/service.user/auth_guard.dart';
 import 'package:senkuko/features/auth/pages/user/voucher/views/voucher_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -23,8 +24,10 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final box = GetStorage();
+
+  Timer? _accountCheckTimer;
 
   String get memberName {
     final user = box.read("user");
@@ -39,7 +42,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController searchController = TextEditingController();
 
   int currentPage = 0;
-
+  List<BannerModel> bannerList = [];
   List<ProductUI> allProducts = [];
   List<ProductUI> filteredProducts = [];
 
@@ -59,31 +62,75 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
+    // Observer untuk mendeteksi ketika aplikasi kembali aktif
+    WidgetsBinding.instance.addObserver(this);
+
+    // Cek akun saat pertama kali Home dibuka
+    checkAccount();
+
+    // Cek status akun setiap 30 detik
+    _startAccountCheckTimer();
+
+    fetchBanner();
     fetchProducts();
   }
 
-  // Tambahkan dispose untuk membersihkan controller
+  // -------------------------------------------------------------------------
+  // CEK STATUS AKUN OTOMATIS
+  // -------------------------------------------------------------------------
+
+  void _startAccountCheckTimer() {
+    _accountCheckTimer?.cancel();
+
+    _accountCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      checkAccount();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Saat aplikasi kembali dibuka / aktif
+    if (state == AppLifecycleState.resumed) {
+      checkAccount();
+    }
+  }
+
+  Future<void> checkAccount() async {
+    await AuthGuard.checkUser();
+  }
+
   @override
   void dispose() {
+    _accountCheckTimer?.cancel();
+
+    WidgetsBinding.instance.removeObserver(this);
+
     controller.dispose();
     searchController.dispose();
+
     super.dispose();
   }
 
   String formatRupiah(int? price) {
     if (price == null) return "Rp 0";
+
     return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
   }
 
   Future<void> fetchProducts() async {
     try {
       final result = await ProductCombinedService.getHomeProducts();
+
       final updatedProducts = await Future.wait(
         result.map((product) async {
           try {
             final image = product.imageUrl?.trim().isNotEmpty == true
                 ? product.imageUrl
                 : await ProductImageService.getProductImage(product.id);
+
             return product.copyWith(imageUrl: image ?? product.imageUrl);
           } catch (e) {
             return product;
@@ -91,7 +138,6 @@ class _HomePageState extends State<HomePage> {
         }),
       );
 
-      // PENTING: Cek mounted sebelum setState
       if (mounted) {
         setState(() {
           allProducts = updatedProducts.cast<ProductUI>();
@@ -106,8 +152,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> fetchBanner() async {
+    print("LOAD BANNER...");
+
+    final result = await BannerService.getActiveBanner();
+
+    print("BANNER DIDAPAT : ${result.length}");
+
+    if (!mounted) return;
+
+    setState(() {
+      bannerList = result;
+    });
+  }
+
   void searchProduct(String keyword) {
-    // PENTING: Cek mounted sebelum setState
     if (!mounted) return;
 
     final results = allProducts.where((p) {
@@ -119,22 +178,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // FIX: sebelumnya fungsi ini hanya mengenali "Makanan & Minuman" dan
-  // "Produk Bayi", sehingga kategori lain (Alat Tulis Kantor, Rumah Tangga,
-  // Perawatan Diri, Sembako, UMKM) selalu jatuh ke "Lainnya" dan filter
-  // untuk kategori tersebut selalu kosong.
-  //
-  // Karena ProductCombinedService (_normalizeCategory) sudah menormalisasi
-  // kategori produk menjadi string lowercase yang sudah cocok 1:1 dengan
-  // label di `categories` (hanya beda huruf besar/kecil), kita cukup
-  // membandingkan langsung tanpa menormalisasi ulang di UI.
   bool _categoryMatches(String productCategory, String selectedCategory) {
     return productCategory.trim().toLowerCase() ==
         selectedCategory.trim().toLowerCase();
   }
 
   void filterCategory(String selectedCategory) {
-    // PENTING: Cek mounted sebelum setState
     if (!mounted) return;
 
     if (selectedCategory == "Semua") {
@@ -154,16 +203,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<ProductUI> get newProducts => filteredProducts.toList();
+
   List<ProductUI> get recommendedProducts => filteredProducts.reversed.toList();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: SafeArea(
         child: Column(
           children: [
-            //HEADER PRO
+            // HEADER
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               decoration: const BoxDecoration(
@@ -173,6 +224,7 @@ class _HomePageState extends State<HomePage> {
                   bottomRight: Radius.circular(30),
                 ),
               ),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -199,10 +251,12 @@ class _HomePageState extends State<HomePage> {
                             color: AppColors.card,
                             borderRadius: BorderRadius.circular(16),
                           ),
+
                           child: GestureDetector(
                             onTap: () {
                               Get.to(() => const SearchProductPage());
                             },
+
                             child: AbsorbPointer(
                               child: AppTextField(
                                 controller: searchController,
@@ -211,21 +265,6 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 10),
-
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(38),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -240,61 +279,107 @@ class _HomePageState extends State<HomePage> {
                   : SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+
                         children: [
                           const SizedBox(height: 16),
 
-                          //BANNER PRO
-                          SizedBox(
-                            height: 190,
-                            child: PageView(
-                              controller: controller,
-                              onPageChanged: (i) {
-                                // PENTING: Cek mounted sebelum setState
-                                if (mounted) {
-                                  setState(() => currentPage = i);
-                                }
-                              },
-                              children: List.generate(
-                                bannerData.length,
-                                (index) => banner(index),
-                              ),
+                          // BANNER
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: SizedBox(
+                              height: 180,
+                              child: bannerList.isEmpty
+                                  ? _emptyBanner()
+                                  : Stack(
+                                      children: [
+                                        PageView.builder(
+                                          controller: controller,
+                                          itemCount: bannerList.length,
+                                          onPageChanged: (index) {
+                                            setState(() {
+                                              currentPage = index;
+                                            });
+                                          },
+                                          itemBuilder: (_, index) {
+                                            return banner(index);
+                                          },
+                                        ),
+
+                                        Positioned(
+                                          bottom: 14,
+                                          left: 0,
+                                          right: 0,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: List.generate(
+                                              bannerList.length,
+                                              (index) => AnimatedContainer(
+                                                duration: const Duration(
+                                                  milliseconds: 250,
+                                                ),
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 3,
+                                                    ),
+                                                height: 8,
+                                                width: currentPage == index
+                                                    ? 22
+                                                    : 8,
+                                                decoration: BoxDecoration(
+                                                  color: currentPage == index
+                                                      ? Colors.white
+                                                      : Colors.white54,
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
 
-                          const SizedBox(height: 10),
-
+                          const SizedBox(height: 20),
                           //DOT
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(bannerData.length, (i) {
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                ),
-                                width: currentPage == i ? 12 : 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: currentPage == i
-                                      ? AppColors.primary
-                                      : Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              );
-                            }),
-                          ),
+                          if (bannerList.isNotEmpty)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(bannerList.length, (i) {
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
+                                  width: currentPage == i ? 12 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: currentPage == i
+                                        ? AppColors.primary
+                                        : Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                );
+                              }),
+                            ),
 
                           const SizedBox(height: 20),
 
-                          //CATEGORY
+                          // CATEGORY
                           SizedBox(
                             height: 100,
+
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
+
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                               ),
+
                               itemCount: categories.length,
+
                               itemBuilder: (context, index) {
                                 final icons = [
                                   Icons.apps,
@@ -319,6 +404,7 @@ class _HomePageState extends State<HomePage> {
 
                           AppSectionTitle(
                             title: "Produk Baru",
+
                             onTap: () {
                               Get.to(() => const ProductListPage());
                             },
@@ -332,6 +418,7 @@ class _HomePageState extends State<HomePage> {
 
                           AppSectionTitle(
                             title: "Voucher",
+
                             onTap: () {
                               Get.to(() => const VoucherPage());
                             },
@@ -341,6 +428,7 @@ class _HomePageState extends State<HomePage> {
 
                           SizedBox(
                             height: 190,
+
                             child: const VoucherPage(isHome: true),
                           ),
                         ],
@@ -353,7 +441,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  //CATEGORY FIX
+  // -------------------------------------------------------------------------
+  // CATEGORY
+  // -------------------------------------------------------------------------
+
   Widget categoryItem(String category, IconData icon) {
     return GestureDetector(
       onTap: () {
@@ -397,6 +488,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // -------------------------------------------------------------------------
+  // PRODUCT LIST
+  // -------------------------------------------------------------------------
+
   Widget productList(List<ProductUI> list) {
     if (list.isEmpty) {
       return const Center(child: Text("Tidak ada produk"));
@@ -404,16 +499,24 @@ class _HomePageState extends State<HomePage> {
 
     return SizedBox(
       height: 212,
+
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+
         padding: const EdgeInsets.symmetric(horizontal: 16),
+
         itemCount: list.length,
+
         itemBuilder: (context, index) {
           return productCard(list[index]);
         },
       ),
     );
   }
+
+  // -------------------------------------------------------------------------
+  // PRODUCT CARD
+  // -------------------------------------------------------------------------
 
   Widget productCard(ProductUI product) {
     return GestureDetector(
@@ -425,11 +528,13 @@ class _HomePageState extends State<HomePage> {
 
       child: Container(
         width: 145,
+
         margin: const EdgeInsets.only(right: 12),
 
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
+
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(15),
@@ -441,34 +546,48 @@ class _HomePageState extends State<HomePage> {
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
             // IMAGE
             Container(
               height: 110,
+
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
+
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
               ),
+
               child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                   ? Padding(
                       padding: const EdgeInsets.all(12),
+
                       child: Image.network(
                         product.imageUrl!,
+
                         height: 80,
                         width: double.infinity,
+
                         fit: BoxFit.contain,
+
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey[200],
+
                             child: const Center(child: Icon(Icons.image)),
                           );
                         },
+
                         loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
+                          if (loadingProgress == null) {
+                            return child;
+                          }
+
                           return Container(
                             color: Colors.grey[200],
+
                             child: const Center(
                               child: CircularProgressIndicator(),
                             ),
@@ -478,7 +597,9 @@ class _HomePageState extends State<HomePage> {
                     )
                   : Container(
                       height: 95,
+
                       color: Colors.grey.shade100,
+
                       child: const Center(child: Icon(Icons.image)),
                     ),
             ),
@@ -493,8 +614,11 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text(
                       product.name,
+
                       maxLines: 2,
+
                       overflow: TextOverflow.ellipsis,
+
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -506,8 +630,11 @@ class _HomePageState extends State<HomePage> {
 
                     Text(
                       product.variantName,
+
                       maxLines: 1,
+
                       overflow: TextOverflow.ellipsis,
+
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade600,
@@ -516,29 +643,44 @@ class _HomePageState extends State<HomePage> {
 
                     const Spacer(),
 
-                    Column(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
                       crossAxisAlignment: CrossAxisAlignment.end,
+
                       children: [
-                        Text(
-                          formatRupiah(product.normalPrice),
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          product.stock > 0
-                              ? 'Stok: ${product.stock}'
-                              : 'Stok habis',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: product.stock > 0
-                                ? Colors.green
-                                : Colors.red,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+
+                          children: [
+                            Text(
+                              formatRupiah(product.normalPrice),
+
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            Text(
+                              product.stock > 0
+                                  ? 'Stok: ${product.stock}'
+                                  : 'Stok habis',
+
+                              style: TextStyle(
+                                fontSize: 10,
+
+                                color: product.stock > 0
+                                    ? Colors.green
+                                    : Colors.red,
+
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -552,147 +694,187 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  //BANNER PRO
-  Widget banner(int index) {
-    final promo = bannerData[index];
+  // -------------------------------------------------------------------------
+  // BANNER
+  // -------------------------------------------------------------------------
 
-    return GestureDetector(
-      onTap: () {
-        if (promo.type == BannerType.promo) {
-          Get.to(() => const PromoPage());
-        } else if (promo.type == BannerType.product) {
-          Get.to(() => ProductListPage(keyword: promo.keyword));
-        } else if (promo.type == BannerType.category) {
-          Get.to(() => CategoryProductsPage(category: promo.keyword));
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: promo.colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
+  Widget banner(int index) {
+  final item = bannerList[index];
+
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 2),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(22),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(.12),
+          blurRadius: 15,
+          offset: const Offset(0, 8),
         ),
-        child: Stack(
-          children: [
-            // Lingkaran background
+      ],
+    ),
+
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+
+          Image.network(
+            item.imageUrl,
+            fit: BoxFit.cover,
+
+            loadingBuilder: (_, child, loading) {
+              if (loading == null) return child;
+
+              return Container(
+                color: Colors.grey.shade200,
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            },
+
+            errorBuilder: (_, __, ___) {
+              return Container(
+                color: Colors.grey.shade300,
+                child: const Icon(
+                  Icons.broken_image,
+                  size: 60,
+                ),
+              );
+            },
+          ),
+
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(.45),
+                  Colors.transparent,
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.center,
+              ),
+            ),
+          ),
+
+          if (item.title.isNotEmpty)
             Positioned(
-              right: -40,
-              bottom: -40,
-              child: Container(
-                width: 170,
-                height: 170,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(.08),
+              left: 18,
+              bottom: 18,
+              right: 18,
+              child: Text(
+                item.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
             ),
+        ],
+      ),
+    ),
+  );
+}
 
-            // Icon besar
-            Positioned(
-              right: 15,
-              top: 15,
-              child: Icon(
-                promo.icon,
-                size: 90,
-                color: Colors.white.withOpacity(.20),
+//Widget Banner Kosong / Belum Ada
+Widget _emptyBanner() {
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(22),
+      gradient: const LinearGradient(
+        colors: [
+          Color(0xff2ecc71),
+          Color(0xff27ae60),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.green.withOpacity(.25),
+          blurRadius: 15,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+
+    child: Stack(
+      children: [
+
+        Positioned(
+          right: -20,
+          top: -20,
+          child: CircleAvatar(
+            radius: 55,
+            backgroundColor: Colors.white.withOpacity(.08),
+          ),
+        ),
+
+        Positioned(
+          bottom: -30,
+          left: -20,
+          child: CircleAvatar(
+            radius: 45,
+            backgroundColor: Colors.white.withOpacity(.08),
+          ),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.all(22),
+          child: Row(
+            children: [
+
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.photo_library_outlined,
+                  color: Colors.white,
+                  size: 38,
+                ),
               ),
-            ),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.18),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Text(
-                      "🔥 TERBATAS",
+              const SizedBox(width: 18),
+
+              const Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    Text(
+                      "Banner Belum Tersedia",
                       style: TextStyle(
                         color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11,
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
+                    SizedBox(height: 8),
 
-                  Text(
-                    promo.title,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  Text(
-                    promo.subtitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 23,
+                    Text(
+                      "Admin belum menambahkan banner promosi.",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  Text(
-                    promo.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-
-                  const Spacer(),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text(
-                          "Lihat Sekarang",
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        SizedBox(width: 6),
-
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 14,
-                          color: Colors.black87,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 }

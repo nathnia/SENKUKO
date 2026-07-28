@@ -335,12 +335,5 @@ class TransactionService {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // 6️⃣  NOTE: Jika Anda memiliki endpoint lain (mis: cancel, refund)
-  // -------------------------------------------------------------------------
-  // Tambahkan fungsi serupa di sini, gunakan pola yang sama:
-  //   - ambil token dari GetStorage
-  //   - buat request (GET/POST/PUT/DELETE)
-  //   - log request/response
-  //   - tangani status code 200/201 sebagai success
+  
 }
