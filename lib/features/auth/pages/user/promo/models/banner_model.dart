@@ -1,30 +1,25 @@
-import 'package:flutter/material.dart';
-
-enum BannerType {
-  promo,
-  product,
-  category,
-}
-
 class BannerModel {
+  final String id;
+  final String imageUrl;
   final String title;
-  final String subtitle;
-  final String description;
+  final int sortOrder;
+  final bool isActive;
 
-  final BannerType type;
-  final String keyword;
-
-  final List<Color> colors;
-
-  final IconData icon;
-
-  const BannerModel({
+  BannerModel({
+    required this.id,
+    required this.imageUrl,
     required this.title,
-    required this.subtitle,
-    required this.description,
-    required this.type,
-    required this.keyword,
-    required this.colors,
-    required this.icon,
+    required this.sortOrder,
+    required this.isActive,
   });
+
+  factory BannerModel.fromJson(Map<String, dynamic> json) {
+    return BannerModel(
+      id: json["id"] ?? "",
+      imageUrl: json["image_url"] ?? "",
+      title: json["title"] ?? "",
+      sortOrder: json["sort_order"] ?? 0,
+      isActive: json["is_active"] ?? true,
+    );
+  }
 }

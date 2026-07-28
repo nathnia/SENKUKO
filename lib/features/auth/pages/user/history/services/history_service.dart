@@ -4,8 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class HistoryService {
-  static final String baseUrl =
-      dotenv.env['BASE_URL']!;
+  static final String baseUrl = dotenv.env['BASE_URL']!;
 
   static Future<List<dynamic>> getHistory() async {
     try {
@@ -85,6 +84,56 @@ class HistoryService {
       return null;
     } catch (e) {
       print("DETAIL ERROR = $e");
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> cancelTransaction(
+    String transactionId,
+  ) async {
+    try {
+      final token = GetStorage().read("token");
+
+      if (token == null) {
+        print("❌ CANCEL ERROR: Token tidak ditemukan");
+        return null;
+      }
+
+      final url = "$baseUrl/api/transactions/$transactionId/cancel";
+
+      print("========== CANCEL TRANSACTION ==========");
+      print("ID  : $transactionId");
+      print("URL : $url");
+
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+
+      print("STATUS : ${response.statusCode}");
+      print("BODY   : ${response.body}");
+      print("=========================================");
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data["success"] == true) {
+        return data["data"];
+      }
+
+      print(
+        "❌ CANCEL FAILED: "
+        "${data["message"] ?? "Gagal membatalkan transaksi"}",
+      );
+
+      return null;
+    } catch (e, stackTrace) {
+      print("❌ CANCEL TRANSACTION ERROR:");
+      print(e);
+      print(stackTrace);
+
       return null;
     }
   }

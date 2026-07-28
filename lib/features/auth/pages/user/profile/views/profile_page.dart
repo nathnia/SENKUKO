@@ -17,7 +17,6 @@ class ProfilePage extends StatelessWidget {
     final String name = user["name"] ?? "-";
     final String code = user["code"] ?? "-";
     final String status = user["status"] ?? "-";
-    final String role = user["role"] ?? "-";
     final String createdAt = user["created_at"] ?? "-";
 
     return Scaffold(
@@ -75,8 +74,6 @@ class ProfilePage extends StatelessWidget {
                 title: "Status",
                 value: status,
               ),
-
-              _infoCard(icon: Icons.badge, title: "Role", value: role),
 
               _infoCard(
                 icon: Icons.calendar_month,

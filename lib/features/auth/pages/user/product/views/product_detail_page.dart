@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_button.dart';
@@ -18,10 +19,8 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  // Daftar semua varian (ukuran/rasa/dll) milik produk ini.
   List<ProductUI> variants = [];
 
-  // Varian yang sedang dipilih & ditampilkan di layar.
   late ProductUI selected;
 
   bool isLoadingVariants = true;
@@ -43,26 +42,28 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       if (!mounted) return;
 
       setState(() {
-        // Kalau service tidak menemukan apa-apa, minimal tampilkan
-        // produk yang sudah ada (dari halaman sebelumnya).
         variants = result.isEmpty ? [widget.product] : result;
 
-        // Pertahankan varian yang sedang dipilih kalau masih ada di
-        // daftar baru, kalau tidak fallback ke varian pertama.
         final match = variants.firstWhere(
           (v) => v.variantId == selected.variantId,
           orElse: () => variants.first,
         );
+
         selected = match;
         isLoadingVariants = false;
       });
     } catch (e) {
-      if (mounted) setState(() => isLoadingVariants = false);
+      if (mounted) {
+        setState(() => isLoadingVariants = false);
+      }
     }
   }
 
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
+    return "Rp ${price.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => "${m[1]}.",
+        )}";
   }
 
   @override
@@ -71,30 +72,34 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("Detail Produk"),
         backgroundColor: AppColors.card,
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-
       body: Column(
         children: [
-          //IMAGE
+          // IMAGE
           Container(
             height: 250,
             color: AppColors.border,
-            child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                ? Image.network(product.imageUrl!, fit: BoxFit.cover)
-                : const Center(child: Icon(Icons.image, size: 100)),
+            child: product.imageUrl != null &&
+                    product.imageUrl!.isNotEmpty
+                ? Image.network(
+                    product.imageUrl!,
+                    fit: BoxFit.cover,
+                  )
+                : const Center(
+                    child: Icon(Icons.image, size: 100),
+                  ),
           ),
 
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  //INFO
+                  // INFO
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -148,14 +153,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
                         const SizedBox(height: 12),
 
-                        // ---------- PILIH VARIAN ----------
+                        // PILIH VARIAN
                         if (isLoadingVariants)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 4),
                             child: SizedBox(
                               height: 16,
                               width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
                             ),
                           )
                         else if (variants.length > 1) ...[
@@ -167,11 +174,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               color: AppColors.textSecondary,
                             ),
                           ),
+
                           const SizedBox(height: 6),
+
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
                             decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(
+                                color: AppColors.border,
+                              ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -182,6 +195,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   final label = v.variantName.isNotEmpty
                                       ? v.variantName
                                       : v.name;
+
                                   return DropdownMenuItem(
                                     value: v.variantId,
                                     child: Text(
@@ -192,11 +206,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 }).toList(),
                                 onChanged: (variantId) {
                                   if (variantId == null) return;
+
                                   final match = variants.firstWhere(
                                     (v) => v.variantId == variantId,
                                     orElse: () => selected,
                                   );
-                                  setState(() => selected = match);
+
+                                  setState(() {
+                                    selected = match;
+                                  });
                                 },
                               ),
                             ),
@@ -215,7 +233,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
                   const SizedBox(height: 8),
 
-                  //DESKRIPSI
+                  // DESKRIPSI
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -225,7 +243,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       children: [
                         const Text(
                           "Deskripsi Produk",
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
 
                         const SizedBox(height: 8),
@@ -246,13 +266,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ),
 
-          //BUTTON
+          // BUTTON
           Container(
             padding: const EdgeInsets.all(16),
             color: AppColors.card,
             child: Row(
               children: [
-                //MASUKKAN KERANJANG
+                // MASUKKAN KERANJANG
                 Expanded(
                   child: AppButton(
                     text: "Masukkan Keranjang",
@@ -260,21 +280,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     onPressed: product.stock == 0
                         ? null
                         : () {
-                            showAddToCartSheet(context, product);
+                            showAddToCartSheet(
+                              context,
+                              product,
+                            );
                           },
                   ),
                 ),
 
                 const SizedBox(width: 10),
 
-                //BELI SEKARANG
+                // BELI SEKARANG
                 Expanded(
                   child: AppButton(
                     text: "Beli Sekarang",
                     onPressed: product.stock == 0
                         ? null
                         : () {
-                            showBuyNowSheet(context, product);
+                            showBuyNowSheet(
+                              context,
+                              product,
+                            );
                           },
                   ),
                 ),
@@ -287,38 +313,41 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 }
 
-//OVERLAY
-// (showBuyNowSheet & showAddToCartSheet tetap sama seperti sebelumnya —
-// keduanya sudah menerima `product` sebagai parameter, jadi otomatis
-// memakai varian yang sedang dipilih tanpa perlu diubah lagi)
+// ============================================================================
+// BUY NOW
+// ============================================================================
 
-void showBuyNowSheet(BuildContext context, ProductUI product) {
+void showBuyNowSheet(
+  BuildContext context,
+  ProductUI product,
+) {
   int qty = 1;
 
+  final TextEditingController qtyController =
+      TextEditingController(text: "1");
+
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}";
+    return "Rp ${price.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => "${m[1]}.",
+        )}";
   }
 
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setState) {
           return GestureDetector(
             onTap: () => Navigator.pop(context),
-
             child: Container(
               color: Colors.black.withAlpha(77),
-
               child: GestureDetector(
                 onTap: () {},
-
                 child: Align(
                   alignment: Alignment.bottomCenter,
-
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
@@ -327,7 +356,6 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                         top: Radius.circular(20),
                       ),
                     ),
-
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -345,8 +373,7 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child:
-                                  product.imageUrl != null &&
+                              child: product.imageUrl != null &&
                                       product.imageUrl!.isNotEmpty
                                   ? Image.network(
                                       product.imageUrl!,
@@ -366,12 +393,17 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
 
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text(product.name),
+
                                   const SizedBox(height: 4),
+
                                   Text(
-                                    formatRupiah(product.normalPrice),
+                                    formatRupiah(
+                                      product.normalPrice,
+                                    ),
                                     style: const TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
@@ -386,7 +418,8 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                         const SizedBox(height: 10),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Jumlah"),
 
@@ -397,16 +430,111 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                                   icon: const Icon(Icons.remove),
                                   onPressed: () {
                                     if (qty > 1) {
-                                      setState(() => qty--);
+                                      setState(() {
+                                        qty--;
+
+                                        qtyController.text =
+                                            qty.toString();
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                            offset: qtyController
+                                                .text
+                                                .length,
+                                          ),
+                                        );
+                                      });
                                     }
                                   },
                                 ),
 
-                                Text(
-                                  "$qty",
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                                SizedBox(
+                                  width: 55,
+                                  child: TextField(
+                                    controller: qtyController,
+                                    keyboardType:
+                                        TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter
+                                          .digitsOnly,
+                                    ],
+                                    textAlign: TextAlign.center,
+                                    selectAllOnFocus: true,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 4,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.border,
+                                        ),
+                                      ),
+                                      focusedBorder:
+                                          OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      if (value.isEmpty) {
+                                        setState(() {
+                                          qty = 0;
+                                        });
+                                        return;
+                                      }
+
+                                      final inputQty =
+                                          int.tryParse(value) ?? 0;
+
+                                      if (inputQty >
+                                          product.stock) {
+                                        qtyController.text =
+                                            product.stock.toString();
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                            offset: qtyController
+                                                .text
+                                                .length,
+                                          ),
+                                        );
+
+                                        setState(() {
+                                          qty = product.stock;
+                                        });
+                                        return;
+                                      }
+
+                                      setState(() {
+                                        qty = inputQty;
+                                      });
+                                    },
+                                    onEditingComplete: () {
+                                      if (qty < 1) {
+                                        qtyController.text = "1";
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          const TextPosition(
+                                            offset: 1,
+                                          ),
+                                        );
+
+                                        setState(() {
+                                          qty = 1;
+                                        });
+                                      }
+                                    },
                                   ),
                                 ),
 
@@ -415,12 +543,27 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                                   icon: const Icon(Icons.add),
                                   onPressed: () {
                                     if (qty < product.stock) {
-                                      setState(() => qty++);
+                                      setState(() {
+                                        qty++;
+
+                                        qtyController.text =
+                                            qty.toString();
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                            offset: qtyController
+                                                .text
+                                                .length,
+                                          ),
+                                        );
+                                      });
                                     } else {
                                       Get.snackbar(
                                         "Stok Tidak Cukup",
                                         "Jumlah maksimal adalah ${product.stock}",
-                                        snackPosition: SnackPosition.BOTTOM,
+                                        snackPosition:
+                                            SnackPosition.BOTTOM,
                                       );
                                     }
                                   },
@@ -433,11 +576,15 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                         const SizedBox(height: 10),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Total"),
+
                             Text(
-                              formatRupiah(product.normalPrice * qty),
+                              formatRupiah(
+                                product.normalPrice * qty,
+                              ),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -452,29 +599,34 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
                           width: double.infinity,
                           height: 45,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
+                            onPressed: qty < 1
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
 
-                              //LANGSUNG KE CHECKOUT (TANPA CART)
-                              Get.to(
-                                () => CheckoutPage(
-                                  directItems: [
-                                    CartItem(
-                                      id: product.id,
-                                      name: product.name,
-                                      price: product.normalPrice,
-                                      qty: qty,
-                                      variantId: product.variantId,
-                                      priceListId: product.normalPriceListId,
-                                      imageUrl: product.imageUrl,
-                                      stock: product.stock,
-                                    ),
-                                  ],
-                                  isFromCart: false,
-                                ),
-                                binding: CheckoutBinding(), // WAJIB
-                              );
-                            },
+                                    Get.to(
+                                      () => CheckoutPage(
+                                        directItems: [
+                                          CartItem(
+                                            id: product.id,
+                                            name: product.name,
+                                            price: product.normalPrice,
+                                            qty: qty,
+                                            variantId:
+                                                product.variantId,
+                                            priceListId:
+                                                product
+                                                    .normalPriceListId,
+                                            imageUrl:
+                                                product.imageUrl,
+                                            stock: product.stock,
+                                          ),
+                                        ],
+                                        isFromCart: false,
+                                      ),
+                                      binding: CheckoutBinding(),
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
@@ -495,13 +647,26 @@ void showBuyNowSheet(BuildContext context, ProductUI product) {
   );
 }
 
-void showAddToCartSheet(BuildContext context, ProductUI product) {
+// ============================================================================
+// ADD TO CART
+// ============================================================================
+
+void showAddToCartSheet(
+  BuildContext context,
+  ProductUI product,
+) {
   final cart = Get.find<CartController>();
 
   int qty = 1;
 
+  final TextEditingController qtyController =
+      TextEditingController(text: "1");
+
   String formatRupiah(int price) {
-    return "Rp ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => "${m[1]}.")}";
+    return "Rp ${price.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => "${m[1]}.",
+        )}";
   }
 
   showModalBottomSheet(
@@ -522,7 +687,7 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.card,
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
                       ),
@@ -535,7 +700,7 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                           height: 4,
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
+                            color: AppColors.border,
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -544,8 +709,7 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child:
-                                  product.imageUrl != null &&
+                              child: product.imageUrl != null &&
                                       product.imageUrl!.isNotEmpty
                                   ? Image.network(
                                       product.imageUrl!,
@@ -556,7 +720,7 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                                   : Container(
                                       width: 70,
                                       height: 70,
-                                      color: Colors.grey.shade200,
+                                      color: AppColors.border,
                                       child: const Icon(Icons.image),
                                     ),
                             ),
@@ -565,7 +729,8 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
 
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     product.name,
@@ -577,7 +742,9 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                                   const SizedBox(height: 5),
 
                                   Text(
-                                    formatRupiah(product.normalPrice),
+                                    formatRupiah(
+                                      product.normalPrice,
+                                    ),
                                     style: const TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
@@ -592,42 +759,164 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                         const SizedBox(height: 15),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               "Jumlah",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
 
                             Row(
                               children: [
+                                // MINUS
                                 IconButton(
                                   onPressed: () {
                                     if (qty > 1) {
-                                      setState(() => qty--);
+                                      setState(() {
+                                        qty--;
+
+                                        qtyController.text =
+                                            qty.toString();
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                            offset: qtyController
+                                                .text
+                                                .length,
+                                          ),
+                                        );
+                                      });
                                     }
                                   },
-                                  icon: const Icon(Icons.remove_circle_outline),
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                  ),
                                 ),
 
-                                Text(
-                                  qty.toString(),
-                                  style: const TextStyle(fontSize: 18),
+                                SizedBox(
+                                  width: 55,
+                                  child: TextField(
+                                    controller: qtyController,
+                                    keyboardType:
+                                        TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter
+                                          .digitsOnly,
+                                    ],
+                                    textAlign: TextAlign.center,
+                                    selectAllOnFocus: true,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 4,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.border,
+                                        ),
+                                      ),
+                                      focusedBorder:
+                                          OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      if (value.isEmpty) {
+                                        setState(() {
+                                          qty = 0;
+                                        });
+                                        return;
+                                      }
+
+                                      final inputQty =
+                                          int.tryParse(value) ?? 0;
+
+                                      if (inputQty >
+                                          product.stock) {
+                                        qtyController.text =
+                                            product.stock.toString();
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                            offset: qtyController
+                                                .text
+                                                .length,
+                                          ),
+                                        );
+
+                                        setState(() {
+                                          qty = product.stock;
+                                        });
+                                        return;
+                                      }
+
+                                      setState(() {
+                                        qty = inputQty;
+                                      });
+                                    },
+                                    onEditingComplete: () {
+                                      if (qty < 1) {
+                                        qtyController.text = "1";
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          const TextPosition(
+                                            offset: 1,
+                                          ),
+                                        );
+
+                                        setState(() {
+                                          qty = 1;
+                                        });
+                                      }
+                                    },
+                                  ),
                                 ),
 
+                                // PLUS
                                 IconButton(
                                   onPressed: () {
                                     if (qty < product.stock) {
-                                      setState(() => qty++);
+                                      setState(() {
+                                        qty++;
+
+                                        qtyController.text =
+                                            qty.toString();
+
+                                        qtyController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                            offset: qtyController
+                                                .text
+                                                .length,
+                                          ),
+                                        );
+                                      });
                                     } else {
                                       Get.snackbar(
                                         "Stok Tidak Cukup",
                                         "Jumlah maksimal adalah ${product.stock}",
-                                        snackPosition: SnackPosition.BOTTOM,
+                                        snackPosition:
+                                            SnackPosition.BOTTOM,
                                       );
                                     }
                                   },
-                                  icon: const Icon(Icons.add_circle_outline),
+                                  icon: const Icon(
+                                    Icons.add_circle_outline,
+                                  ),
                                 ),
                               ],
                             ),
@@ -637,12 +926,15 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                         const SizedBox(height: 10),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Total"),
 
                             Text(
-                              formatRupiah(product.normalPrice * qty),
+                              formatRupiah(
+                                product.normalPrice * qty,
+                              ),
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
@@ -657,33 +949,36 @@ void showAddToCartSheet(BuildContext context, ProductUI product) {
                           width: double.infinity,
                           height: 45,
                           child: ElevatedButton(
-                            onPressed: () {
-                              cart.addItem(
-                                product.id,
-                                product.name,
-                                product.normalPrice,
-                                product.variantId,
-                                product.normalPriceListId,
-                                product.imageUrl,
-                                product.stock,
-                                qty: qty,
-                              );
+                            onPressed: qty < 1
+                                ? null
+                                : () {
+                                    cart.addItem(
+                                      product.id,
+                                      product.name,
+                                      product.normalPrice,
+                                      product.variantId,
+                                      product.normalPriceListId,
+                                      product.imageUrl,
+                                      product.stock,
+                                      qty: qty,
+                                    );
 
-                              Navigator.pop(context);
+                                    Navigator.pop(context);
 
-                              Get.snackbar(
-                                "Berhasil",
-                                "$qty produk berhasil ditambahkan",
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            },
-
+                                    Get.snackbar(
+                                      "Berhasil",
+                                      "$qty produk berhasil ditambahkan",
+                                      snackPosition:
+                                          SnackPosition.BOTTOM,
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                             ),
-
-                            child: const Text("Masukkan ke Keranjang"),
+                            child: const Text(
+                              "Masukkan ke Keranjang",
+                            ),
                           ),
                         ),
                       ],
