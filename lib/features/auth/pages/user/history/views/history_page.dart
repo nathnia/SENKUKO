@@ -21,59 +21,68 @@ class HistoryPage extends StatelessWidget {
   }
 
   Color statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case "paid":
-      case "completed":
-      case "settlement":
-      case "capture":
-        return Colors.green;
+  switch (status.toLowerCase()) {
+    case "paid":
+    case "completed":
+    case "settlement":
+    case "capture":
+      return Colors.green;
 
-      case "processing":
-        return Colors.orange;
+    case "shipped":
+      return Colors.teal;
 
-      case "pending":
-      case "pending_payment":
-        return Colors.blue;
+    case "processing":
+      return Colors.orange;
 
-      case "cancel":
-      case "cancelled":
-      case "expire":
-      case "deny":
-        return Colors.red;
+    case "pending":
+    case "pending_payment":
+      return Colors.blue;
 
-      default:
-        return Colors.grey;
-    }
+    case "cancel":
+    case "cancelled":
+    case "expire":
+    case "deny":
+      return Colors.red;
+
+    default:
+      return Colors.grey;
   }
+}
 
   String statusText(String status) {
-    switch (status.toLowerCase()) {
-      case "paid":
-      case "settlement":
-      case "capture":
-        return "Berhasil";
+  switch (status.toLowerCase()) {
+    case "paid":
+    case "settlement":
+    case "capture":
+      return "Berhasil";
 
-      case "pending":
-      case "pending_payment":
-        return "Menunggu Konfirmasi";
+    case "completed":
+      return "Selesai";
 
-      case "processing":
-        return "Diproses";
+    case "shipped":
+      return "Dikirim";
 
-      case "cancel":
-      case "cancelled":
-        return "Dibatalkan";  
+    case "processing":
+      return "Diproses";
 
-      case "expire":
-        return "Kadaluarsa";
+    case "pending":
+    case "pending_payment":
+      return "Menunggu Konfirmasi";
 
-      case "deny":
-        return "Ditolak";
+    case "cancel":
+    case "cancelled":
+      return "Dibatalkan";
 
-      default:
-        return status;
-    }
+    case "expire":
+      return "Kedaluwarsa";
+
+    case "deny":
+      return "Ditolak";
+
+    default:
+      return status;
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -81,17 +90,14 @@ class HistoryPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Riwayat Pesanan"),
+        title: const Text(
+          "Riwayat Pesanan",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
         centerTitle: true,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: controller.refreshHistory,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {

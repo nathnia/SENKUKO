@@ -5,6 +5,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:senkuko/core/app_colors.dart';
 import 'package:senkuko/core/widgets/app_section_title.dart';
 import 'package:senkuko/core/widgets/app_textfield.dart';
+import 'package:senkuko/core/widgets/product_card.dart';
 import 'package:senkuko/features/auth/pages/user/home/views/category_product_page.dart';
 import 'package:senkuko/features/auth/pages/user/home/views/search_product_page.dart';
 import 'package:senkuko/features/auth/pages/user/product/models/product_ui_model.dart';
@@ -431,6 +432,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
                             child: const VoucherPage(isHome: true),
                           ),
+                          const SizedBox(height: 90),
                         ],
                       ),
                     ),
@@ -487,9 +489,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
   }
-
   // -------------------------------------------------------------------------
-  // PRODUCT LIST
+  // PRODUCT CARD
   // -------------------------------------------------------------------------
 
   Widget productList(List<ProductUI> list) {
@@ -507,189 +508,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
         itemCount: list.length,
 
-        itemBuilder: (context, index) {
-          return productCard(list[index]);
+        itemBuilder: (_, index) {
+          final product = list[index];
+
+          return ProductCard(
+            product: product,
+
+            onTap: () {
+              Get.to(() => ProductDetailPage(product: product));
+            },
+          );
         },
-      ),
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // PRODUCT CARD
-  // -------------------------------------------------------------------------
-
-  Widget productCard(ProductUI product) {
-    return GestureDetector(
-      onTap: () {
-        if (mounted) {
-          Get.to(() => ProductDetailPage(product: product));
-        }
-      },
-
-      child: Container(
-        width: 145,
-
-        margin: const EdgeInsets.only(right: 12),
-
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(15),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-            // IMAGE
-            Container(
-              height: 110,
-
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-              ),
-
-              child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(12),
-
-                      child: Image.network(
-                        product.imageUrl!,
-
-                        height: 80,
-                        width: double.infinity,
-
-                        fit: BoxFit.contain,
-
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[200],
-
-                            child: const Center(child: Icon(Icons.image)),
-                          );
-                        },
-
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) {
-                            return child;
-                          }
-
-                          return Container(
-                            color: Colors.grey[200],
-
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Container(
-                      height: 95,
-
-                      color: Colors.grey.shade100,
-
-                      child: const Center(child: Icon(Icons.image)),
-                    ),
-            ),
-
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    Text(
-                      product.name,
-
-                      maxLines: 2,
-
-                      overflow: TextOverflow.ellipsis,
-
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-                      product.variantName,
-
-                      maxLines: 1,
-
-                      overflow: TextOverflow.ellipsis,
-
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-                      crossAxisAlignment: CrossAxisAlignment.end,
-
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-
-                          children: [
-                            Text(
-                              formatRupiah(product.normalPrice),
-
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-
-                            const SizedBox(height: 4),
-
-                            Text(
-                              product.stock > 0
-                                  ? 'Stok: ${product.stock}'
-                                  : 'Stok habis',
-
-                              style: TextStyle(
-                                fontSize: 10,
-
-                                color: product.stock > 0
-                                    ? Colors.green
-                                    : Colors.red,
-
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -699,182 +528,164 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // -------------------------------------------------------------------------
 
   Widget banner(int index) {
-  final item = bannerList[index];
+    final item = bannerList[index];
 
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 2),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(22),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(.12),
-          blurRadius: 15,
-          offset: const Offset(0, 8),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.12),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              item.imageUrl,
+              fit: BoxFit.cover,
+
+              loadingBuilder: (_, child, loading) {
+                if (loading == null) return child;
+
+                return Container(
+                  color: Colors.grey.shade200,
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              },
+
+              errorBuilder: (_, __, ___) {
+                return Container(
+                  color: Colors.grey.shade300,
+                  child: const Icon(Icons.broken_image, size: 60),
+                );
+              },
+            ),
+
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.black.withOpacity(.45), Colors.transparent],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.center,
+                ),
+              ),
+            ),
+
+            if (item.title.isNotEmpty)
+              Positioned(
+                left: 18,
+                bottom: 18,
+                right: 18,
+                child: Text(
+                  item.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+          ],
         ),
-      ],
-    ),
+      ),
+    );
+  }
 
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+  //Widget Banner Kosong / Belum Ada
+  Widget _emptyBanner() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xff2ecc71), Color(0xff27ae60)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(.25),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+
       child: Stack(
-        fit: StackFit.expand,
         children: [
-
-          Image.network(
-            item.imageUrl,
-            fit: BoxFit.cover,
-
-            loadingBuilder: (_, child, loading) {
-              if (loading == null) return child;
-
-              return Container(
-                color: Colors.grey.shade200,
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            },
-
-            errorBuilder: (_, __, ___) {
-              return Container(
-                color: Colors.grey.shade300,
-                child: const Icon(
-                  Icons.broken_image,
-                  size: 60,
-                ),
-              );
-            },
-          ),
-
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(.45),
-                  Colors.transparent,
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.center,
-              ),
+          Positioned(
+            right: -20,
+            top: -20,
+            child: CircleAvatar(
+              radius: 55,
+              backgroundColor: Colors.white.withOpacity(.08),
             ),
           ),
 
-          if (item.title.isNotEmpty)
-            Positioned(
-              left: 18,
-              bottom: 18,
-              right: 18,
-              child: Text(
-                item.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
+          Positioned(
+            bottom: -30,
+            left: -20,
+            child: CircleAvatar(
+              radius: 45,
+              backgroundColor: Colors.white.withOpacity(.08),
             ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(22),
+            child: Row(
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_outlined,
+                    color: Colors.white,
+                    size: 38,
+                  ),
+                ),
+
+                const SizedBox(width: 18),
+
+                const Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Banner Belum Tersedia",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      SizedBox(height: 8),
+
+                      Text(
+                        "Admin belum menambahkan banner promosi.",
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-    ),
-  );
-}
-
-//Widget Banner Kosong / Belum Ada
-Widget _emptyBanner() {
-  return Container(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(22),
-      gradient: const LinearGradient(
-        colors: [
-          Color(0xff2ecc71),
-          Color(0xff27ae60),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.green.withOpacity(.25),
-          blurRadius: 15,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    ),
-
-    child: Stack(
-      children: [
-
-        Positioned(
-          right: -20,
-          top: -20,
-          child: CircleAvatar(
-            radius: 55,
-            backgroundColor: Colors.white.withOpacity(.08),
-          ),
-        ),
-
-        Positioned(
-          bottom: -30,
-          left: -20,
-          child: CircleAvatar(
-            radius: 45,
-            backgroundColor: Colors.white.withOpacity(.08),
-          ),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.all(22),
-          child: Row(
-            children: [
-
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.photo_library_outlined,
-                  color: Colors.white,
-                  size: 38,
-                ),
-              ),
-
-              const SizedBox(width: 18),
-
-              const Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    Text(
-                      "Banner Belum Tersedia",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    Text(
-                      "Admin belum menambahkan banner promosi.",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 }

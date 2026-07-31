@@ -6,6 +6,7 @@ import 'package:senkuko/core/widgets/app_button.dart';
 import 'package:senkuko/core/widgets/app_card.dart';
 import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
 import 'package:senkuko/features/auth/pages/user/checkout/controller/checkout_controller.dart';
+import 'package:senkuko/features/auth/pages/user/promo/models/promotion_model.dart';
 import 'package:senkuko/features/auth/pages/user/service.user/auth_guard.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -639,51 +640,51 @@ class _PromoVoucherCard extends StatelessWidget {
             children: [
               const SizedBox(height: 8),
 
-              _CodeField(
-                controller: checkout.promoController,
-                label: 'Kode Promo',
-                hint: 'Contoh: PROMO10',
-                icon: Icons.local_offer_outlined,
-                onApplied: () {
-                  checkout.applyPromo(
-                    subtotal: subtotal,
-                    items: items,
-                    priceListId: priceListId,
-                  );
-                },
-              ),
-
-              const SizedBox(height: 12),
-
               Obx(() {
-                if (checkout.promoCodes.isEmpty) {
-                  return const SizedBox.shrink();
+                if (checkout.promotions.isEmpty) {
+                  return const Text("Belum ada promo tersedia");
                 }
 
-                return Align(
-                  alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: checkout.promoCodes.map((code) {
-                      return InputChip(
-                        label: Text(code),
-                        deleteIcon: const Icon(Icons.close, size: 18),
-                        onDeleted: () {
-                          checkout.removePromoCode(
-                            code,
-                            subtotal: subtotal,
-                            items: items,
-                            priceListId: priceListId,
-                          );
-                        },
-                      );
-                    }).toList(),
+                return DropdownButtonFormField<PromotionModel>(
+                  value: checkout.selectedPromotion.value,
+
+                  decoration: InputDecoration(
+                    labelText: "Pilih Promo",
+
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+
+                    prefixIcon: const Icon(Icons.local_offer),
                   ),
+
+                  items: checkout.promotions.map((promo) {
+                    return DropdownMenuItem(
+                      value: promo,
+
+                      child: Text(
+                        promo.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+
+                  onChanged: (promo) {
+                    if (promo == null) return;
+
+                    checkout.applySelectedPromotion(
+                      promotion: promo,
+
+                      subtotal: subtotal,
+
+                      items: items,
+
+                      priceListId: priceListId,
+                    );
+                  },
                 );
               }),
-
-              const SizedBox(height: 8),
             ],
           ),
 

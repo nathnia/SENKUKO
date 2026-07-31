@@ -2,39 +2,39 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:senkuko/features/auth/pages/user/service.user/cache_service.dart';
-import '../models/banner_model.dart';
+import '../models/promotion_model.dart';
 
-class BannerService {
+class PromotionService {
   static final String baseUrl = dotenv.env['BASE_URL']!;
 
-  static Future<List<BannerModel>> getActiveBanner() async {
+  static Future<List<PromotionModel>> getPromotions() async {
     try {
       // ================= CACHE =================
-      if (!CacheService.isExpired(CacheService.bannerTime)) {
-        final cache = CacheService.read(CacheService.bannerKey);
+      if (!CacheService.isExpired(CacheService.promotionTime)) {
+        final cache = CacheService.read(CacheService.promotionKey);
 
         if (cache != null) {
-          print("📦 BANNER FROM CACHE");
+          print("📦 PROMOTION FROM CACHE");
 
           return (cache as List)
-              .map((e) => BannerModel.fromJson(e))
+              .map((e) => PromotionModel.fromJson(e))
               .toList();
         }
       }
 
-      print("🌐 BANNER FROM API");
+      print("🌐 PROMOTION FROM API");
 
       final response = await http.get(
-        Uri.parse("$baseUrl/api/banners/active"),
+        Uri.parse("$baseUrl/api/promotions"),
         headers: {
           "Accept": "application/json",
         },
       );
 
-      print("=== BANNER STATUS ===");
+      print("=== PROMOTION STATUS ===");
       print(response.statusCode);
 
-      print("=== BANNER BODY ===");
+      print("=== PROMOTION BODY ===");
       print(response.body);
 
       if (response.statusCode != 200) {
@@ -47,21 +47,21 @@ class BannerService {
 
       // ================= SAVE CACHE =================
       CacheService.save(
-        CacheService.bannerKey,
+        CacheService.promotionKey,
         data,
       );
 
       CacheService.saveTime(
-        CacheService.bannerTime,
+        CacheService.promotionTime,
       );
 
-      print("TOTAL BANNER : ${data.length}");
+      print("TOTAL PROMOTION : ${data.length}");
 
       return data
-          .map((e) => BannerModel.fromJson(e))
+          .map((e) => PromotionModel.fromJson(e))
           .toList();
     } catch (e) {
-      print("BANNER ERROR : $e");
+      print("PROMOTION ERROR : $e");
       return [];
     }
   }
