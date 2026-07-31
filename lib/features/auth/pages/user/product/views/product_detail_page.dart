@@ -120,7 +120,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         Row(
                           children: [
                             Text(
-                              formatRupiah(product.normalPrice),
+                              formatRupiah(product.price),
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
@@ -402,7 +402,7 @@ void showBuyNowSheet(
 
                                   Text(
                                     formatRupiah(
-                                      product.normalPrice,
+                                      product.price,
                                     ),
                                     style: const TextStyle(
                                       color: AppColors.primary,
@@ -583,7 +583,7 @@ void showBuyNowSheet(
 
                             Text(
                               formatRupiah(
-                                product.normalPrice * qty,
+                                product.price * qty,
                               ),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -610,7 +610,7 @@ void showBuyNowSheet(
                                           CartItem(
                                             id: product.id,
                                             name: product.name,
-                                            price: product.normalPrice,
+                                            price: product.price,
                                             qty: qty,
                                             variantId:
                                                 product.variantId,
@@ -743,7 +743,7 @@ void showAddToCartSheet(
 
                                   Text(
                                     formatRupiah(
-                                      product.normalPrice,
+                                      product.price,
                                     ),
                                     style: const TextStyle(
                                       color: AppColors.primary,
@@ -933,7 +933,7 @@ void showAddToCartSheet(
 
                             Text(
                               formatRupiah(
-                                product.normalPrice * qty,
+                                product.price * qty,
                               ),
                               style: const TextStyle(
                                 color: AppColors.primary,
@@ -955,9 +955,9 @@ void showAddToCartSheet(
                                     cart.addItem(
                                       product.id,
                                       product.name,
-                                      product.normalPrice,
+                                      product.price,
                                       product.variantId,
-                                      product.normalPriceListId,
+                                      product.priceListId,
                                       product.imageUrl,
                                       product.stock,
                                       qty: qty,

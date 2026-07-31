@@ -1,11 +1,12 @@
 import 'dart:convert';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:senkuko/features/auth/pages/user/service.user/cache_service.dart';
 import '../models/product_ui_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ProductCombinedService {
-  static final String baseUrl =
-      dotenv.env['BASE_URL']!;
+  static final String baseUrl = dotenv.env['BASE_URL']!;
 
   /// Home – 1 card per PARENT produk (sama seperti getAllProducts).
   static Future<List<ProductUI>> getHomeProducts() async {
@@ -38,7 +39,8 @@ class ProductCombinedService {
             .where((v) => v['product_id']?.toString() == productId)
             .toList();
 
-        if (productVariants.isEmpty) continue; // tidak ada varian = tidak bisa dijual
+        if (productVariants.isEmpty)
+          continue; // tidak ada varian = tidak bisa dijual
 
         // Varian dasar: prioritas is_base_unit == 1, kalau tidak ada pakai yang pertama.
         final baseVariant = productVariants.firstWhere(
@@ -115,39 +117,86 @@ class ProductCombinedService {
   //  FETCH MENTAH (products + variants + prices)
   // --------------------------------------------------------------
   static Future<Map<String, List<dynamic>>?> _fetchRaw() async {
-    final productRes = await http.get(
-      Uri.parse('$baseUrl/api/products'),
-      headers: {"Accept": "application/json"},
-    );
-    final variantRes = await http.get(
-      Uri.parse('$baseUrl/api/product-variants'), // ⚠️ cek/ganti kalau URL aslinya beda
-      headers: {"Accept": "application/json"},
-    );
-    final priceRes = await http.get(
-      Uri.parse('$baseUrl/api/product-prices'),
-      headers: {"Accept": "application/json"},
-    );
+  // =========================
+  // CEK CACHE DULU
+  // =========================
+  if (!CacheService.isExpired(CacheService.productTime)) {
+    final cache = CacheService.read(CacheService.productKey);
 
-    if (productRes.statusCode != 200 ||
-        variantRes.statusCode != 200 ||
-        priceRes.statusCode != 200) {
-      print(
-        '❌ API ERROR — products:${productRes.statusCode} '
-        'variants:${variantRes.statusCode} prices:${priceRes.statusCode}',
-      );
-      return null;
+    if (cache != null) {
+      print("📦 PRODUCT FROM CACHE");
+
+      return {
+        "products": cache["products"] ?? [],
+        "variants": cache["variants"] ?? [],
+        "prices": cache["prices"] ?? [],
+      };
     }
-
-    final List<dynamic> productJson = jsonDecode(productRes.body)['data'] ?? [];
-    final List<dynamic> variantJson = jsonDecode(variantRes.body)['data'] ?? [];
-    final List<dynamic> priceJson   = jsonDecode(priceRes.body)['data'] ?? [];
-
-    return {
-      'products': productJson,
-      'variants': variantJson,
-      'prices': priceJson,
-    };
   }
+
+  print("🌐 PRODUCT FROM API");
+
+  final productRes = await http.get(
+    Uri.parse('$baseUrl/api/products'),
+    headers: {
+      "Accept": "application/json",
+    },
+  );
+
+  final variantRes = await http.get(
+    Uri.parse('$baseUrl/api/product-variants'),
+    headers: {
+      "Accept": "application/json",
+    },
+  );
+
+  final priceRes = await http.get(
+    Uri.parse('$baseUrl/api/product-prices'),
+    headers: {
+      "Accept": "application/json",
+    },
+  );
+
+  if (productRes.statusCode != 200 ||
+      variantRes.statusCode != 200 ||
+      priceRes.statusCode != 200) {
+    print(
+      '❌ API ERROR '
+      'products:${productRes.statusCode} '
+      'variants:${variantRes.statusCode} '
+      'prices:${priceRes.statusCode}',
+    );
+
+    return null;
+  }
+
+  final List<dynamic> productJson =
+      jsonDecode(productRes.body)["data"] ?? [];
+
+  final List<dynamic> variantJson =
+      jsonDecode(variantRes.body)["data"] ?? [];
+
+  final List<dynamic> priceJson =
+      jsonDecode(priceRes.body)["data"] ?? [];
+
+  // =========================
+  // SIMPAN CACHE
+  // =========================
+
+  CacheService.save(CacheService.productKey, {
+    "products": productJson,
+    "variants": variantJson,
+    "prices": priceJson,
+  });
+
+  CacheService.saveTime(CacheService.productTime);
+
+  return {
+    "products": productJson,
+    "variants": variantJson,
+    "prices": priceJson,
+  };
+}
 
   /// Kelompokkan entry harga berdasarkan product_variant_id, supaya bisa
   /// diambil cepat per varian.
@@ -187,15 +236,32 @@ class ProductCombinedService {
     final normalEntry = pickPrice('NORMAL', variantPrices.first);
     final memberEntry = pickPrice('MEMBER', normalEntry);
     final grosirEntry = pickPrice('GROSIR', normalEntry);
-
     final int normalPrice = _parsePrice(normalEntry['price']);
-    final int memberPrice =
-        _parsePrice(memberEntry['price']) != 0 ? _parsePrice(memberEntry['price']) : normalPrice;
-    final int grosirPrice =
-        _parsePrice(grosirEntry['price']) != 0 ? _parsePrice(grosirEntry['price']) : normalPrice;
-
-    // STOK: langsung dari stock_qty milik VARIAN ini, bukan dari parent.
+    final int memberPrice = _parsePrice(memberEntry['price']) != 0
+        ? _parsePrice(memberEntry['price'])
+        : normalPrice;
+    final int grosirPrice = _parsePrice(grosirEntry['price']) != 0
+        ? _parsePrice(grosirEntry['price'])
+        : normalPrice;
     final int stock = _parseInt(variant['stock_qty']);
+    int displayPrice = normalPrice;
+    String displayPriceListId = normalEntry["price_list_id"]?.toString() ?? "";
+
+    switch (customerGroup) {
+      case "member":
+        displayPrice = memberPrice;
+        displayPriceListId = memberEntry["price_list_id"]?.toString() ?? "";
+        break;
+
+      case "grosir":
+        displayPrice = grosirPrice;
+        displayPriceListId = grosirEntry["price_list_id"]?.toString() ?? "";
+        break;
+
+      default:
+        displayPrice = normalPrice;
+        displayPriceListId = normalEntry["price_list_id"]?.toString() ?? "";
+    }
 
     return ProductUI(
       id: product['id']?.toString() ?? '',
@@ -203,14 +269,17 @@ class ProductCombinedService {
       category: _normalizeCategory(product['category_name']),
       variantName: variant['name']?.toString() ?? '',
       description: product['description']?.toString() ?? '',
+      price: displayPrice,
       normalPrice: normalPrice,
       memberPrice: memberPrice,
       grosirPrice: grosirPrice,
       variantId: variantId,
+      priceListId: displayPriceListId,
       normalPriceListId: normalEntry['price_list_id']?.toString() ?? '',
       memberPriceListId: memberEntry['price_list_id']?.toString() ?? '',
       grosirPriceListId: grosirEntry['price_list_id']?.toString() ?? '',
-      grosirMinQty: int.tryParse(grosirEntry['min_qty']?.toString() ?? '24') ?? 24,
+      grosirMinQty:
+          int.tryParse(grosirEntry['min_qty']?.toString() ?? '24') ?? 24,
       stock: stock,
       imageUrl: _extractImageUrl(product),
     );
@@ -314,5 +383,15 @@ class ProductCombinedService {
   static String _fixScheme(String url) {
     if (url.startsWith('//')) return 'https:$url';
     return url;
+  }
+
+  static final box = GetStorage();
+
+  static String get customerGroup {
+    final user = box.read("user");
+
+    if (user == null) return "normal";
+
+    return (user["customer_group"] ?? "").toString().toLowerCase();
   }
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:senkuko/features/auth/pages/user/promo/models/promotion_model.dart';
+import 'package:senkuko/features/auth/pages/user/promo/services/promotion_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:senkuko/features/auth/login/services/auth_service.dart';
 import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
@@ -26,6 +28,8 @@ class CheckoutController extends GetxController {
   final noteController = TextEditingController();
   final promoController = TextEditingController();
   final voucherController = TextEditingController();
+  final RxList<PromotionModel> promotions = <PromotionModel>[].obs;
+  final Rx<PromotionModel?> selectedPromotion = Rx<PromotionModel?>(null);
 
   // =========================================================================
   // REACTIVE STATE
@@ -248,24 +252,27 @@ class CheckoutController extends GetxController {
       for (final entry in appliedPromotions) {
         if (entry is! Map) continue;
 
-        final String discountType =
-            (entry['discount_type'] ?? entry['type'] ?? '')
-                .toString()
-                .toLowerCase()
-                .trim();
+        final type = (entry['discount_type'] ?? entry['type'] ?? '')
+            .toString()
+            .toLowerCase();
 
-        final int amount =
+        final rewardType = (entry['reward_type'] ?? '')
+            .toString()
+            .toLowerCase();
+
+        final amount =
             (entry['discount_amount'] as num?)?.toInt() ??
             (entry['amount'] as num?)?.toInt() ??
             0;
 
-        if (discountType.contains('voucher')) {
+        if (type.contains('voucher')) {
           voucherDiscount += amount;
-        } else {
-          promoDiscount += amount;
+
+          if (rewardType == "free_item") {
+            print("Voucher Free Item");
+          }
         }
       }
-
       // =====================================================================
       // AMBIL GRAND TOTAL DARI BACKEND
       // =====================================================================
@@ -331,143 +338,31 @@ class CheckoutController extends GetxController {
   // APPLY PROMO
   // =========================================================================
 
-  Future<void> applyPromo({
+  Future<void> applySelectedPromotion({
+    required PromotionModel promotion,
     required int subtotal,
     required List<dynamic> items,
     String? priceListId,
   }) async {
-    final code = promoController.text.trim().toUpperCase();
-
-    if (code.isEmpty) return;
-
-    if (promoCodes.contains(code)) {
+    if (promoCodes.contains(promotion.code)) {
       Get.snackbar(
-        'Kode Promo',
-        'Kode promo sudah digunakan.',
+        "Promo",
+        "Promo sudah diterapkan",
         snackPosition: SnackPosition.BOTTOM,
       );
-
       return;
     }
 
-    try {
-      isLoading.value = true;
+    selectedPromotion.value = promotion;
 
-      // ---------------------------------------------------------------------
-      // Buat list sementara untuk preview
-      // ---------------------------------------------------------------------
+    promoCodes.clear();
+    promoCodes.add(promotion.code);
 
-      final List<String> trialPromos = [...promoCodes, code];
-
-      final response = await TransactionService.createTransaction(
-        items: items,
-
-        paymentMethod: paymentMethod.value,
-
-        address: addressController.text.trim(),
-
-        city: cityController.text.trim(),
-
-        region: regionController.text.trim(),
-
-        subregion: subregionController.text.trim(),
-
-        note: noteController.text.trim(),
-
-        promoCodes: trialPromos,
-
-        voucherCodes: voucherCodes.toList(),
-
-        priceListId: priceListId,
-
-        previewOnly: true,
-      );
-
-      if (response == null) {
-        Get.snackbar(
-          'Kode Promo',
-          'Kode tidak valid atau preview gagal.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-
-        return;
-      }
-
-      // ---------------------------------------------------------------------
-      // Ambil response
-      // ---------------------------------------------------------------------
-
-      final dynamic rawData = response['data'] ?? response;
-
-      final Map<String, dynamic> data = rawData is Map
-          ? Map<String, dynamic>.from(rawData)
-          : <String, dynamic>{};
-
-      final List appliedPromotions = data['applied_promotions'] is List
-          ? List.from(data['applied_promotions'])
-          : [];
-
-      // ---------------------------------------------------------------------
-      // Cek apakah ada promo yang diterapkan
-      // ---------------------------------------------------------------------
-
-      int promoDiscount = 0;
-
-      for (final entry in appliedPromotions) {
-        if (entry is! Map) continue;
-
-        final type = (entry['discount_type'] ?? entry['type'] ?? '')
-            .toString()
-            .toLowerCase();
-
-        final amount =
-            (entry['discount_amount'] as num?)?.toInt() ??
-            (entry['amount'] as num?)?.toInt() ??
-            0;
-
-        if (!type.contains('voucher')) {
-          promoDiscount += amount;
-        }
-      }
-
-      if (promoDiscount <= 0) {
-        Get.snackbar(
-          'Kode Promo',
-          'Kode tidak valid atau tidak berlaku untuk pesanan ini.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-
-        return;
-      }
-
-      // ---------------------------------------------------------------------
-      // Simpan promo
-      // ---------------------------------------------------------------------
-
-      if (!promoCodes.contains(code)) {
-        promoCodes.add(code);
-      }
-
-      promoController.clear();
-
-      // ---------------------------------------------------------------------
-      // Preview ulang
-      // ---------------------------------------------------------------------
-
-      await previewDiscounts(
-        subtotal: subtotal,
-        items: items,
-        priceListId: priceListId,
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Kode Promo',
-        'Terjadi kesalahan: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      isLoading.value = false;
-    }
+    await previewDiscounts(
+      subtotal: subtotal,
+      items: items,
+      priceListId: priceListId,
+    );
   }
 
   // =========================================================================
@@ -563,37 +458,42 @@ class CheckoutController extends GetxController {
       // ---------------------------------------------------------------------
 
       int voucherDiscount = 0;
+bool voucherApplied = false;
 
-      for (final entry in appliedPromotions) {
-        if (entry is! Map) continue;
+for (final entry in appliedPromotions) {
+  if (entry is! Map) continue;
 
-        final type = (entry['discount_type'] ?? entry['type'] ?? '')
-            .toString()
-            .toLowerCase();
+  final type = (entry['discount_type'] ?? entry['type'] ?? '')
+      .toString()
+      .toLowerCase();
 
-        final amount =
-            (entry['discount_amount'] as num?)?.toInt() ??
-            (entry['amount'] as num?)?.toInt() ??
-            0;
+  final rewardType = (entry['reward_type'] ?? '')
+      .toString()
+      .toLowerCase();
 
-        if (type.contains('voucher')) {
-          voucherDiscount += amount;
-        }
-      }
+  final amount =
+      (entry['discount_amount'] as num?)?.toInt() ??
+      (entry['amount'] as num?)?.toInt() ??
+      0;
 
-      // ---------------------------------------------------------------------
-      // VOUCHER VALID
-      // ---------------------------------------------------------------------
+  if (type.contains('voucher')) {
+    voucherApplied = true;
+    voucherDiscount += amount;
 
-      if (voucherDiscount <= 0) {
-        Get.snackbar(
-          'Kode Voucher',
-          'Kode tidak valid atau tidak berlaku untuk pesanan ini.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+    if (rewardType == "free_item") {
+      print("Voucher Free Item berhasil diterapkan");
+    }
+  }
+}
 
-        return;
-      }
+if (!voucherApplied) {
+  Get.snackbar(
+    'Kode Voucher',
+    'Kode tidak valid atau tidak berlaku untuk pesanan ini.',
+    snackPosition: SnackPosition.BOTTOM,
+  );
+  return;
+}
 
       // ---------------------------------------------------------------------
       // SIMPAN VOUCHER
@@ -641,7 +541,9 @@ class CheckoutController extends GetxController {
     required List<dynamic> items,
     String? priceListId,
   }) async {
-    promoCodes.remove(code);
+    promoCodes.clear();
+
+    selectedPromotion.value = null;
 
     await previewDiscounts(
       subtotal: subtotal,
@@ -700,6 +602,7 @@ class CheckoutController extends GetxController {
     }
 
     loadProfile();
+    loadPromotions();
   }
 
   // =========================================================================
@@ -724,6 +627,19 @@ class CheckoutController extends GetxController {
     }
   }
 
+  // =========================================================================
+  // LOAD PROMO
+  // =========================================================================
+
+  Future<void> loadPromotions() async {
+    isLoading.value = true;
+
+    try {
+      promotions.value = await PromotionService.getPromotions();
+    } finally {
+      isLoading.value = false;
+    }
+  }
   // =========================================================================
   // CHECKOUT FINAL
   // =========================================================================
@@ -761,7 +677,6 @@ class CheckoutController extends GetxController {
       // =====================================================================
 
       final List<String> finalPromoCodes = [...promoCodes];
-
       final List<String> finalVoucherCodes = [...voucherCodes];
 
       // ---------------------------------------------------------------------
@@ -792,23 +707,14 @@ class CheckoutController extends GetxController {
         items: items,
 
         paymentMethod: paymentMethod.value,
-
         address: addressController.text.trim(),
-
         city: cityController.text.trim(),
-
         region: regionController.text.trim(),
-
         subregion: subregionController.text.trim(),
-
         note: noteController.text.trim(),
-
         promoCodes: finalPromoCodes,
-
         voucherCodes: finalVoucherCodes,
-
         priceListId: priceListId,
-
         previewOnly: false,
       );
 
@@ -834,11 +740,8 @@ class CheckoutController extends GetxController {
 
           arguments: {
             "invoice": result["invoice_number"],
-
             "total": result["grand_total"],
-
             "status": result["status"] ?? "pending",
-
             "transaction_id": result["transaction_id"],
           },
         );
@@ -1114,7 +1017,6 @@ class CheckoutController extends GetxController {
     regionController.dispose();
     subregionController.dispose();
     noteController.dispose();
-    promoController.dispose();
     voucherController.dispose();
     super.onClose();
   }

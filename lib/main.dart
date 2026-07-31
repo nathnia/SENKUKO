@@ -11,11 +11,8 @@ Future<void> main() async {
 
   // Load file .env
   await dotenv.load(fileName: ".env");
-
   await GetStorage.init();
-
   Get.put(CartController());
-
   runApp(const MyApp());
 }
 
@@ -34,7 +31,6 @@ class MyApp extends StatelessWidget {
       initialRoute: token != null
           ? AppPages.home
           : AppPages.login,
-
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/webhook') == true) {
           return null;

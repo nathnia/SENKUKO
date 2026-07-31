@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:senkuko/core/app_colors.dart';
+import 'package:senkuko/core/widgets/product_card.dart';
 import 'package:senkuko/features/auth/pages/user/product/models/product_ui_model.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/product_combined_service.dart';
 import 'package:senkuko/features/auth/pages/user/product/views/product_detail_page.dart';
@@ -143,57 +144,19 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
 
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: .72,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
+                childAspectRatio: .64,
               ),
 
-              itemBuilder: (_, i) {
-                final p = products[i];
+              itemBuilder: (_, index) {
+                final product = products[index];
 
-                return GestureDetector(
+                return ProductCard(
+                  product: product,
                   onTap: () {
-                    Get.to(() => ProductDetailPage(product: p));
+                    Get.to(() => ProductDetailPage(product: product));
                   },
-
-                  child: Card(
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child:
-                              p.imageUrl != null &&
-                                  p.imageUrl!.trim().isNotEmpty
-                              ? Image.network(
-                                  p.imageUrl!,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) {
-                                    return const Icon(Icons.image, size: 50);
-                                  },
-                                )
-                              : const Icon(Icons.image, size: 50),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            children: [
-                              Text(p.name, maxLines: 2),
-
-                              const SizedBox(height: 5),
-
-                              Text(
-                                rupiah(p.normalPrice),
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 );
               },
             ),
