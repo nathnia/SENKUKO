@@ -138,7 +138,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
               ),
             )
           : GridView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
 
               itemCount: products.length,
 
@@ -146,7 +146,7 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: .64,
+                childAspectRatio: .72,
               ),
 
               itemBuilder: (_, index) {

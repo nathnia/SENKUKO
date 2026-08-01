@@ -74,13 +74,13 @@ class _ProductListPageState extends State<ProductListPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : GridView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               itemCount: products.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: .64,
+                childAspectRatio: .72,
               ),
               itemBuilder: (_, index) {
                 final product = products[index];
