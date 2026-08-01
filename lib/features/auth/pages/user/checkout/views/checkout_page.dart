@@ -610,83 +610,100 @@ class _PromoVoucherCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ================================================================
+
           // PROMO
-          // ================================================================
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            leading: const Icon(
-              Icons.local_offer_outlined,
-              color: Colors.green,
-            ),
-            title: const Text(
-              'Promo',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            subtitle: Obx(() {
-              if (checkout.promoCodes.isEmpty) {
-                return const Text(
-                  'Punya kode promo?',
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                );
-              }
-
-              return Text(
-                '${checkout.promoCodes.length} promo diterapkan',
-                style: const TextStyle(color: Colors.green, fontSize: 13),
-              );
-            }),
+          const Row(
             children: [
-              const SizedBox(height: 8),
-
-              Obx(() {
-                if (checkout.promotions.isEmpty) {
-                  return const Text("Belum ada promo tersedia");
-                }
-
-                return DropdownButtonFormField<PromotionModel>(
-                  value: checkout.selectedPromotion.value,
-
-                  decoration: InputDecoration(
-                    labelText: "Pilih Promo",
-
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-
-                    prefixIcon: const Icon(Icons.local_offer),
-                  ),
-
-                  items: checkout.promotions.map((promo) {
-                    return DropdownMenuItem(
-                      value: promo,
-
-                      child: Text(
-                        promo.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-
-                  onChanged: (promo) {
-                    if (promo == null) return;
-
-                    checkout.applySelectedPromotion(
-                      promotion: promo,
-
-                      subtotal: subtotal,
-
-                      items: items,
-
-                      priceListId: priceListId,
-                    );
-                  },
-                );
-              }),
+              Icon(Icons.local_offer_outlined, color: Colors.green),
+              SizedBox(width: 8),
+              Text(
+                "Promo",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ],
           ),
+
+          const SizedBox(height: 4),
+
+          Obx(() {
+            if (checkout.promoCodes.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.only(left: 32),
+                child: Text(
+                  "Pilih promo yang tersedia",
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(left: 32),
+              child: Text(
+                "${checkout.promoCodes.length} promo diterapkan",
+                style: const TextStyle(color: Colors.green, fontSize: 13),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 14),
+
+          Obx(() {
+            if (checkout.promotions.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  "Belum ada promo tersedia",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              );
+            }
+
+            return DropdownButtonFormField<PromotionModel>(
+              isExpanded: true,
+              value: checkout.selectedPromotion.value,
+
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+
+                prefixIcon: const Icon(Icons.local_offer),
+
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+              ),
+
+              hint: const Text("Pilih Promo"),
+
+              items: checkout.promotions.map((promo) {
+                return DropdownMenuItem(
+                  value: promo,
+                  child: Text(promo.name, overflow: TextOverflow.ellipsis),
+                );
+              }).toList(),
+
+              onChanged: (promo) {
+                if (promo == null) return;
+
+                checkout.applySelectedPromotion(
+                  promotion: promo,
+                  subtotal: subtotal,
+                  items: items,
+                  priceListId: priceListId,
+                );
+              },
+            );
+          }),
 
           const Divider(height: 24),
 

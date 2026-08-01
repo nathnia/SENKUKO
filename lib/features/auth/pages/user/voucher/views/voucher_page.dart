@@ -664,17 +664,11 @@ class _VoucherPageState extends State<VoucherPage> {
     backgroundColor: const Color(0xFFF5F7FA),
 
     appBar: AppBar(
+      title: const Text("Voucher Saya"),
       backgroundColor: AppColors.primary,
-        foregroundColor: Colors.black,
+      foregroundColor: Colors.black,
       elevation: 0,
-      centerTitle: true,
-      title: const Text(
-        "Voucher Saya",
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+      surfaceTintColor: Colors.transparent,
     ),
 
     body: RefreshIndicator(

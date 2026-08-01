@@ -499,7 +499,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     return SizedBox(
-      height: 212,
+      height: 205,
 
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
