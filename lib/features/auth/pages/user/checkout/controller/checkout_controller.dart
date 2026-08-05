@@ -647,8 +647,6 @@ if (!voucherApplied) {
   Future<void> checkout({
     required bool fromCart,
     required List<dynamic> items,
-    String? promoCode,
-    String? voucherCode,
     String? priceListId,
   }) async {
     // -----------------------------------------------------------------------
@@ -678,26 +676,6 @@ if (!voucherApplied) {
 
       final List<String> finalPromoCodes = [...promoCodes];
       final List<String> finalVoucherCodes = [...voucherCodes];
-
-      // ---------------------------------------------------------------------
-      // Jika ada kode dari parameter dan belum ada di list
-      // ---------------------------------------------------------------------
-
-      if (promoCode != null && promoCode.trim().isNotEmpty) {
-        final code = promoCode.trim().toUpperCase();
-
-        if (!finalPromoCodes.contains(code)) {
-          finalPromoCodes.add(code);
-        }
-      }
-
-      if (voucherCode != null && voucherCode.trim().isNotEmpty) {
-        final code = voucherCode.trim().toUpperCase();
-
-        if (!finalVoucherCodes.contains(code)) {
-          finalVoucherCodes.add(code);
-        }
-      }
 
       // =====================================================================
       // TRANSAKSI FINAL

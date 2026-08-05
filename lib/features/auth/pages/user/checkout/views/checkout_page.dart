@@ -215,15 +215,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 _checkout.checkout(
                   fromCart: widget.isFromCart,
                   items: _items,
-
-                  promoCode: _checkout.promoCodes.isNotEmpty
-                      ? _checkout.promoCodes.join(',')
-                      : null,
-
-                  voucherCode: _checkout.voucherCodes.isNotEmpty
-                      ? _checkout.voucherCodes.join(',')
-                      : null,
-
                   priceListId:
                       _checkout.selectedPriceListId?.value.isNotEmpty == true
                       ? _checkout.selectedPriceListId!.value
