@@ -89,7 +89,10 @@ class TransactionService {
       // ---------------------------------------------------------------------
       final Set<String> effectivePromo = {};
       if (promoCode != null && promoCode.trim().isNotEmpty) {
-        effectivePromo.add(promoCode.trim().toUpperCase());
+        for (final code in promoCode.split(RegExp(r'[\s,;]+'))) {
+          final trimmed = code.trim();
+          if (trimmed.isNotEmpty) effectivePromo.add(trimmed.toUpperCase());
+        }
       }
       for (final c in promoCodes) {
         if (c.trim().isNotEmpty) effectivePromo.add(c.trim().toUpperCase());
@@ -97,7 +100,10 @@ class TransactionService {
 
       final Set<String> effectiveVoucher = {};
       if (voucherCode != null && voucherCode.trim().isNotEmpty) {
-        effectiveVoucher.add(voucherCode.trim().toUpperCase());
+        for (final code in voucherCode.split(RegExp(r'[\s,;]+'))) {
+          final trimmed = code.trim();
+          if (trimmed.isNotEmpty) effectiveVoucher.add(trimmed.toUpperCase());
+        }
       }
       for (final c in voucherCodes) {
         if (c.trim().isNotEmpty) effectiveVoucher.add(c.trim().toUpperCase());
@@ -119,14 +125,26 @@ class TransactionService {
         };
       }).toList();
 
+      String? resolvedPriceListId = priceListId;
+      final itemPriceListIds = itemsPayload
+          .map((e) => e["price_list_id"] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .cast<String>()
+          .toSet();
+
+      if ((resolvedPriceListId == null || resolvedPriceListId.isEmpty) &&
+          itemPriceListIds.length == 1) {
+        resolvedPriceListId = itemPriceListIds.first;
+      }
+
       // ---------------------------------------------------------------------
       // 2.9  Assemble final body
       // ---------------------------------------------------------------------
       final Map<String, dynamic> body = {
         // root price_list_id (jika Anda punya satu price‑list untuk seluruh
         // transaksi). Jika null, backend biasanya meng‑ignore field ini.
-        if (priceListId != null && priceListId.isNotEmpty)
-          "price_list_id": priceListId,
+        if (resolvedPriceListId != null && resolvedPriceListId.isNotEmpty)
+          "price_list_id": resolvedPriceListId,
         "payment_method": paymentMethod.toLowerCase(),
         "delivery_address": address.trim(),
         "delivery_city": city.trim(),

@@ -614,9 +614,7 @@ void showBuyNowSheet(
                                             qty: qty,
                                             variantId:
                                                 product.variantId,
-                                            priceListId:
-                                                product
-                                                    .normalPriceListId,
+                                            priceListId: product.priceListId,
                                             imageUrl:
                                                 product.imageUrl,
                                             stock: product.stock,
