@@ -79,13 +79,10 @@ class _SearchProductPageState extends State<SearchProductPage> {
 
         title: AppTextField(
           controller: searchController,
-
           focusNode: focusNode,
-
           hint: "Cari produk...",
-
           icon: Icons.search,
-
+          iconRight: true,
           onChanged: search,
         ),
       ),
@@ -101,28 +98,28 @@ class _SearchProductPageState extends State<SearchProductPage> {
               ),
             )
           : GridView.builder(
-  padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
 
-  itemCount: filteredProducts.length,
+              itemCount: filteredProducts.length,
 
-  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    crossAxisSpacing: 14,
-    mainAxisSpacing: 14,
-    childAspectRatio: .72,
-  ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                childAspectRatio: .72,
+              ),
 
-  itemBuilder: (_, index) {
-    final product = filteredProducts[index];
+              itemBuilder: (_, index) {
+                final product = filteredProducts[index];
 
-    return ProductCard(
-      product: product,
-      onTap: () {
-        Get.to(() => ProductDetailPage(product: product));
-      },
-    );
-  },
-)
+                return ProductCard(
+                  product: product,
+                  onTap: () {
+                    Get.to(() => ProductDetailPage(product: product));
+                  },
+                );
+              },
+            ),
     );
   }
 }

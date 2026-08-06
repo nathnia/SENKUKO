@@ -25,6 +25,19 @@ class PromotionModel {
     required this.stackable,
   });
 
+  DateTime? get validFromDate => DateTime.tryParse(validFrom);
+
+  DateTime? get validToDate => DateTime.tryParse(validTo);
+
+  bool get isUpcoming =>
+      validFromDate != null && DateTime.now().isBefore(validFromDate!);
+
+  bool get isExpired =>
+      validToDate != null && DateTime.now().isAfter(validToDate!);
+
+  bool get isValidNow =>
+      isActive && !isUpcoming && !isExpired;
+
   factory PromotionModel.fromJson(Map<String, dynamic> json) {
     return PromotionModel(
       id: json["id"] ?? "",

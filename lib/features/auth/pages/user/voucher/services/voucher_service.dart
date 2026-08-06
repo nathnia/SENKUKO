@@ -26,7 +26,7 @@ class VoucherService {
 
       return data
           .map((e) => VoucherModel.fromJson(e))
-          .where((e) => e.status.toLowerCase() == "active")
+          .where((e) => e.isValidNow)
           .toList();
     } catch (e) {
       print("Voucher Error : $e");

@@ -59,6 +59,7 @@ class PromotionService {
 
       return data
           .map((e) => PromotionModel.fromJson(e))
+          .where((promotion) => promotion.isValidNow)
           .toList();
     } catch (e) {
       print("PROMOTION ERROR : $e");

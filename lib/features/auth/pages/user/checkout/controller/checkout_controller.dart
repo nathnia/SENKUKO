@@ -2,12 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:senkuko/features/auth/pages/user/payment/view/payment_webview_page.dart';
 import 'package:senkuko/features/auth/pages/user/promo/models/promotion_model.dart';
 import 'package:senkuko/features/auth/pages/user/promo/services/promotion_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:senkuko/features/auth/login/services/auth_service.dart';
 import 'package:senkuko/features/auth/pages/user/cart/controller/cart_controller.dart';
 import 'package:senkuko/features/auth/pages/user/product/services/transaction_service.dart';
+import 'package:senkuko/features/auth/pages/user/service.user/cache_service.dart';
 
 class CheckoutController extends GetxController {
   // =========================================================================
@@ -265,12 +266,23 @@ class CheckoutController extends GetxController {
             (entry['amount'] as num?)?.toInt() ??
             0;
 
-        if (type.contains('voucher')) {
-          voucherDiscount += amount;
+        final bool isVoucher = type.contains('voucher') ||
+            type.contains('coupon') ||
+            rewardType.contains('voucher') ||
+            rewardType.contains('coupon');
 
-          if (rewardType == "free_item") {
-            print("Voucher Free Item");
-          }
+        final bool isPromo = type.contains('promo') ||
+            type.contains('promotion') ||
+            rewardType.contains('promo') ||
+            rewardType.contains('promotion') ||
+            (!isVoucher && amount > 0);
+
+        if (isVoucher) {
+          voucherDiscount += amount;
+        } else if (isPromo) {
+          promoDiscount += amount;
+        } else {
+          promoDiscount += amount;
         }
       }
       // =====================================================================
@@ -284,6 +296,20 @@ class CheckoutController extends GetxController {
       // =====================================================================
 
       final int calculatedTotal = subtotal - promoDiscount - voucherDiscount;
+
+      // =====================================================================
+      // SYNC DENGAN BACKEND JIKA BREAKDOWN TIDAK LENGKAP
+      // =====================================================================
+
+      if (backendGrandTotal != null) {
+        final int backendDiscount =
+            (subtotal - backendGrandTotal).clamp(0, subtotal);
+        final int parsedDiscount = promoDiscount + voucherDiscount;
+
+        if (backendDiscount > parsedDiscount) {
+          promoDiscount += backendDiscount - parsedDiscount;
+        }
+      }
 
       // =====================================================================
       // UPDATE REACTIVE STATE
@@ -713,6 +739,8 @@ if (!voucherApplied) {
       // =====================================================================
 
       if (result["payment_method"] == "cod") {
+        CacheService.clearProductCache();
+
         Get.offAllNamed(
           "/order-success",
 
@@ -737,15 +765,14 @@ if (!voucherApplied) {
           ?.toString();
 
       if (redirectUrl != null && transactionId != null) {
-        final uri = Uri.parse(redirectUrl);
+        Get.to(() => PaymentWebViewPage(url: redirectUrl));
 
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _startStatusChecking(transactionId, result, showDialog: false);
 
-          _showPaymentDialog(transactionId, result);
-        } else {
-          Get.snackbar('Error', 'Tidak dapat membuka halaman pembayaran.');
-        }
+        Get.snackbar(
+          'Pembayaran',
+          'Selesaikan pembayaran di dalam aplikasi melalui halaman pembayaran.',
+        );
       } else {
         Get.snackbar('Error', 'Data pembayaran tidak lengkap.');
       }
@@ -768,40 +795,43 @@ if (!voucherApplied) {
   // PAYMENT STATUS POLLING
   // =========================================================================
 
-  void _startStatusChecking(String transactionId, Map<String, dynamic> data) {
-    Get.defaultDialog(
-      title: "Menunggu Pembayaran",
+  void _startStatusChecking(String transactionId, Map<String, dynamic> data,
+      {bool showDialog = true}) {
+    if (showDialog) {
+      Get.defaultDialog(
+        title: "Menunggu Pembayaran",
 
-      barrierDismissible: false,
+        barrierDismissible: false,
 
-      content: Column(
-        children: const [
-          SizedBox(height: 16),
+        content: Column(
+          children: const [
+            SizedBox(height: 16),
 
-          CircularProgressIndicator(),
+            CircularProgressIndicator(),
 
-          SizedBox(height: 16),
+            SizedBox(height: 16),
 
-          Text(
-            "Selesaikan pembayaran di aplikasi/browser.\n"
-            "Status akan otomatis diperbarui.",
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+            Text(
+              "Selesaikan pembayaran di aplikasi/browser.\n"
+              "Status akan otomatis diperbarui.",
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
 
-      confirm: TextButton(
-        onPressed: () {
-          _statusCheckTimer?.cancel();
+        confirm: TextButton(
+          onPressed: () {
+            _statusCheckTimer?.cancel();
 
-          Get.back();
+            Get.back();
 
-          Get.offAllNamed("/history");
-        },
+            Get.offAllNamed("/history");
+          },
 
-        child: const Text("Cek Nanti di Riwayat"),
-      ),
-    );
+          child: const Text("Cek Nanti di Riwayat"),
+        ),
+      );
+    }
 
     int attempts = 0;
 
@@ -817,7 +847,7 @@ if (!voucherApplied) {
 
         if (statusResult == null) {
           if (attempts >= maxAttempts) {
-            _handleTimeout(transactionId);
+            _handleTimeout(transactionId, showDialog: showDialog);
           }
 
           return;
@@ -835,8 +865,11 @@ if (!voucherApplied) {
         if (paymentStatus == "paid") {
           _statusCheckTimer?.cancel();
 
-          Get.back();
+          if (showDialog) {
+            Get.back();
+          }
 
+          CacheService.clearProductCache();
           _showSuccessDialog(data);
 
           return;
@@ -851,8 +884,11 @@ if (!voucherApplied) {
             paymentStatus == "failed") {
           _statusCheckTimer?.cancel();
 
-          Get.back();
+          if (showDialog) {
+            Get.back();
+          }
 
+          CacheService.clearProductCache();
           _showFailedDialog();
 
           return;
@@ -863,13 +899,13 @@ if (!voucherApplied) {
         // ---------------------------------------------------------------
 
         if (attempts >= maxAttempts) {
-          _handleTimeout(transactionId);
+          _handleTimeout(transactionId, showDialog: showDialog);
         }
       } catch (e) {
         print("PAYMENT POLLING ERROR: $e");
 
         if (attempts >= maxAttempts) {
-          _handleTimeout(transactionId);
+          _handleTimeout(transactionId, showDialog: showDialog);
         }
       }
     });
@@ -879,10 +915,12 @@ if (!voucherApplied) {
   // TIMEOUT
   // =========================================================================
 
-  void _handleTimeout(String transactionId) {
+  void _handleTimeout(String transactionId, {bool showDialog = true}) {
     _statusCheckTimer?.cancel();
 
-    Get.back();
+    if (showDialog) {
+      Get.back();
+    }
 
     _showTimeoutDialog(transactionId);
   }
