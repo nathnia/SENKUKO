@@ -40,6 +40,11 @@ class CacheService {
     box.write(key, DateTime.now().toIso8601String());
   }
 
+  static void clearProductCache() {
+    box.remove(productKey);
+    box.remove(productTime);
+  }
+
   static void clearAll() {
     box.remove(productKey);
     box.remove(productTime);  

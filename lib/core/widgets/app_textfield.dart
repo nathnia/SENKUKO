@@ -6,9 +6,11 @@ class AppTextField extends StatelessWidget {
   final String hint;
   final Function(String)? onChanged;
   final IconData? icon;
-
-  // TAMBAHAN
   final FocusNode? focusNode;
+
+  /// false = icon kiri (default)
+  /// true = icon kanan
+  final bool iconRight;
 
   const AppTextField({
     super.key,
@@ -16,7 +18,8 @@ class AppTextField extends StatelessWidget {
     required this.hint,
     this.onChanged,
     this.icon,
-    this.focusNode, // TAMBAHAN
+    this.focusNode,
+    this.iconRight = false,
   });
 
   @override
@@ -30,14 +33,22 @@ class AppTextField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        focusNode: focusNode, // TAMBAHAN
+        focusNode: focusNode,
         onChanged: onChanged,
+        textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
-          icon: icon != null
+          border: InputBorder.none,
+          hintText: hint,
+
+          // HOME PAGE
+          prefixIcon: !iconRight && icon != null
               ? Icon(icon, color: AppColors.icon)
               : null,
-          hintText: hint,
-          border: InputBorder.none,
+
+          // SEARCH PAGE
+          suffixIcon: iconRight && icon != null
+              ? Icon(icon, color: AppColors.icon)
+              : null,
         ),
       ),
     );

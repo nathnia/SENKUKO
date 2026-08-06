@@ -68,7 +68,7 @@ class _ProductListPageState extends State<ProductListPage> {
       appBar: AppBar(
         title: const Text("Produk"),
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: isLoading
