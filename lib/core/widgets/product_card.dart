@@ -6,12 +6,14 @@ class ProductCard extends StatelessWidget {
   final ProductUI product;
   final VoidCallback? onTap;
   final double width;
+  final bool isInGrid;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
     this.width = 145,
+    this.isInGrid = false,
   });
 
   String formatRupiah(int price) {
@@ -28,7 +30,7 @@ class ProductCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: width,
-        margin: const EdgeInsets.only(right: 12),
+        margin: isInGrid ? EdgeInsets.zero : const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),

@@ -260,8 +260,13 @@ class CartPage extends StatelessWidget {
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
               ),
 
-              child: Column(
-                children: [
+              child: SafeArea(
+                top: false,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: Column(
+                      children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -299,7 +304,10 @@ class CartPage extends StatelessWidget {
                             },
                     ),
                   ),
-                ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

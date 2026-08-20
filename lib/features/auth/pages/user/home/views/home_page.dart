@@ -226,8 +226,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 960),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Halo, $memberName 👋",
@@ -270,7 +273,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ],
                   ),
-                ],
+                  ],
+                  ),
+                ),
               ),
             ),
 
@@ -278,8 +283,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 960),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
                           const SizedBox(height: 16),
@@ -287,8 +295,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           // BANNER
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SizedBox(
-                              height: 180,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final bannerHeight =
+                                    (constraints.maxWidth * .36)
+                                        .clamp(180.0, 260.0)
+                                        .toDouble();
+
+                                return SizedBox(
+                              height: bannerHeight,
                               child: bannerList.isEmpty
                                   ? _emptyBanner()
                                   : Stack(
@@ -340,31 +355,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         ),
                                       ],
                                     ),
+                                );
+                              },
                             ),
                           ),
-
-                          const SizedBox(height: 20),
-                          //DOT
-                          if (bannerList.isNotEmpty)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(bannerList.length, (i) {
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 3,
-                                  ),
-                                  width: currentPage == i ? 12 : 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: currentPage == i
-                                        ? AppColors.primary
-                                        : Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                );
-                              }),
-                            ),
 
                           const SizedBox(height: 20),
 
@@ -433,8 +427,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             child: const VoucherPage(isHome: true),
                           ),
                           const SizedBox(height: 90),
-                        ],
+                          ],
+                        ),
                       ),
+                    ),
                     ),
             ),
           ],
@@ -531,20 +527,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final item = bannerList[index];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.12),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: const Color(0xff173b29).withOpacity(.18),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
 
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -572,27 +568,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.black.withOpacity(.45), Colors.transparent],
+                  colors: [
+                    Colors.black.withOpacity(.68),
+                    Colors.black.withOpacity(.12),
+                    Colors.transparent,
+                  ],
                   begin: Alignment.bottomCenter,
-                  end: Alignment.center,
+                  end: Alignment.topCenter,
                 ),
               ),
             ),
 
-            if (item.title.isNotEmpty)
-              Positioned(
-                left: 18,
-                bottom: 18,
-                right: 18,
-                child: Text(
-                  item.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
           ],
         ),
       ),

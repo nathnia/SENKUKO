@@ -128,8 +128,9 @@ class HistoryPage extends StatelessWidget {
                     vertical: 8,
                     horizontal: 16,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 4,
                     children: [
                       Text(
                         "Terakhir diperbarui: ${formatDate(controller.lastRefreshTime.value.toIso8601String())}",
@@ -148,8 +149,12 @@ class HistoryPage extends StatelessWidget {
                 ),
 
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
                   itemCount: controller.transactions.length,
                   itemBuilder: (_, index) {
                     final trx = controller.transactions[index];
@@ -233,6 +238,9 @@ class HistoryPage extends StatelessWidget {
                       ),
                     );
                   },
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],

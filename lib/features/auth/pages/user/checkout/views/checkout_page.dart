@@ -120,8 +120,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
         final int voucherDiscount = _checkout.voucherDiscountAmount.value;
 
-        final int backendTotal = _checkout.totalPrice.value;
-
         final int currentTotal = (_subtotal - promoDiscount - voucherDiscount)
             .clamp(0, _subtotal);
 
@@ -129,59 +127,67 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // =====================================================
-                    // ALAMAT
-                    // =====================================================
-                    _ShippingAddressCard(
-                      userName: user['name'] ?? '-',
-                      userPhone: user['phone'] ?? '-',
-                      checkout: _checkout,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: AppCard(
+                      margin: EdgeInsets.zero,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // =====================================================
+                      // ALAMAT
+                      // =====================================================
+                      _ShippingAddressCard(
+                        userName: user['name'] ?? '-',
+                        userPhone: user['phone'] ?? '-',
+                        checkout: _checkout,
+                      ),
+
+                      const _CheckoutSectionDivider(),
+
+                      // =====================================================
+                      // PRODUK
+                      // =====================================================
+                      _ProductListCard(items: _items),
+
+                      const _CheckoutSectionDivider(),
+
+                      // =====================================================
+                      // PAYMENT
+                      // =====================================================
+                      _PaymentMethodCard(checkout: _checkout),
+
+                      const _CheckoutSectionDivider(),
+
+                      // =====================================================
+                      // PROMO & VOUCHER
+                      // =====================================================
+                      _PromoVoucherCard(
+                        checkout: _checkout,
+                        subtotal: _subtotal,
+                        items: _items,
+                      ),
+
+                      const _CheckoutSectionDivider(),
+
+                      // =====================================================
+                      // SUMMARY
+                      // =====================================================
+                      _SummaryCard(
+                        checkout: _checkout,
+                        subtotal: _subtotal,
+                        total: currentTotal,
+                        format: _formatRupiah,
+                      ),
+
+                    ],
+                  ),
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // =====================================================
-                    // PRODUK
-                    // =====================================================
-                    _ProductListCard(items: _items),
-
-                    const SizedBox(height: 12),
-
-                    // =====================================================
-                    // PAYMENT
-                    // =====================================================
-                    _PaymentMethodCard(checkout: _checkout),
-
-                    const SizedBox(height: 12),
-
-                    // =====================================================
-                    // PROMO & VOUCHER
-                    // =====================================================
-                    _PromoVoucherCard(
-                      checkout: _checkout,
-                      subtotal: _subtotal,
-                      items: _items,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // =====================================================
-                    // SUMMARY
-                    // =====================================================
-                    _SummaryCard(
-                      checkout: _checkout,
-                      subtotal: _subtotal,
-                      total: currentTotal,
-                      format: _formatRupiah,
-                    ),
-
-                    const SizedBox(height: 100),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -256,6 +262,18 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _CheckoutSectionDivider extends StatelessWidget {
+  const _CheckoutSectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      child: Divider(height: 1, thickness: 1, color: Color(0xffe9edf1)),
+    );
+  }
+}
+
 // ============================================================================
 // SHIPPING ADDRESS
 // ============================================================================
@@ -273,8 +291,7 @@ class _ShippingAddressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionHeader(
@@ -389,7 +406,6 @@ class _ShippingAddressCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
     );
   }
 }
@@ -413,8 +429,7 @@ class _ProductListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -429,7 +444,6 @@ class _ProductListCard extends StatelessWidget {
           else
             ...items.map(_itemTile),
         ],
-      ),
     );
   }
 
@@ -517,8 +531,7 @@ class _PaymentMethodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -563,7 +576,6 @@ class _PaymentMethodCard extends StatelessWidget {
             );
           }),
         ],
-      ),
     );
   }
 }
@@ -597,8 +609,7 @@ class _PromoVoucherCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceListId = _priceListId();
 
-    return AppCard(
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
@@ -760,7 +771,6 @@ class _PromoVoucherCard extends StatelessWidget {
             );
           }),
         ],
-      ),
     );
   }
 }
@@ -831,16 +841,17 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xfff4fbf6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xffd6eddb)),
+      ),
       child: Column(
         children: [
           _PriceRow(label: 'Subtotal', amount: subtotal, format: format),
-
-          const SizedBox(height: 10),
-
-          _PriceRow(label: 'Ongkir', amount: 0, format: format),
-
-          const SizedBox(height: 10),
 
           _PriceRow(
             label: 'Diskon Promo',
@@ -954,33 +965,31 @@ class _BottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
 
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                mainAxisSize: MainAxisSize.min,
-
-                children: [
-                  const Text('Total', style: TextStyle(color: Colors.grey)),
-
-                  Text(
-                    format(total),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+            final totalInfo = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Total', style: TextStyle(color: Colors.grey)),
+                Text(
+                  format(total),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
                   ),
-                ],
-              ),
-            ),
+                ),
+              ],
+            );
 
-            SizedBox(
-              width: 170,
+            final paymentButton = SizedBox(
               height: 50,
-
               child: Obx(() {
                 if (isLoading.value) {
                   return const Center(child: CircularProgressIndicator());
@@ -991,8 +1000,30 @@ class _BottomBar extends StatelessWidget {
                   onPressed: onPayPressed,
                 );
               }),
+            );
+
+            if (constraints.maxWidth < 380) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  totalInfo,
+                  const SizedBox(height: 12),
+                  paymentButton,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: totalInfo),
+                const SizedBox(width: 12),
+                SizedBox(width: 170, child: paymentButton),
+              ],
+            );
+              },
             ),
-          ],
+          ),
         ),
       ),
     );
