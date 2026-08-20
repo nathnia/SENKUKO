@@ -137,26 +137,40 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                 ],
               ),
             )
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 1000
+                    ? 5
+                    : constraints.maxWidth >= 700
+                    ? 4
+                    : 2;
 
-              itemCount: products.length,
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1000),
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: products.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: .72,
+                          ),
+                      itemBuilder: (_, index) {
+                        final product = products[index];
 
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: .72,
-              ),
-
-              itemBuilder: (_, index) {
-                final product = products[index];
-
-                return ProductCard(
-                  product: product,
-                  onTap: () {
-                    Get.to(() => ProductDetailPage(product: product));
-                  },
+                        return ProductCard(
+                          product: product,
+                          isInGrid: true,
+                          onTap: () {
+                            Get.to(() => ProductDetailPage(product: product));
+                          },
+                        );
+                      },
+                    ),
+                  ),
                 );
               },
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:senkuko/core/widgets/app_card.dart';
 import '../controller/transaction_detail_controller.dart';
 
 class TransactionDetailPage extends StatelessWidget {
@@ -78,18 +79,20 @@ class TransactionDetailPage extends StatelessWidget {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
 
-          child: Column(
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: AppCard(
+                margin: EdgeInsets.zero,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+              children: [
 
               // ======================================================
               // STATUS
               // ======================================================
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-
-                  child: Column(
+              Column(
                     children: [
 
                       Icon(
@@ -142,21 +145,15 @@ class TransactionDetailPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                  ),
-                ),
               ),
 
-              const SizedBox(height: 15),
+              _transactionSectionDivider(),
 
               // ======================================================
               // CUSTOMER
               // ======================================================
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-
-                  child: Column(
+              Column(
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
 
@@ -181,21 +178,15 @@ class TransactionDetailPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                  ),
-                ),
               ),
 
-              const SizedBox(height: 15),
+              _transactionSectionDivider(),
 
               // ======================================================
               // ALAMAT
               // ======================================================
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-
-                  child: Column(
+              Column(
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
 
@@ -251,21 +242,15 @@ class TransactionDetailPage extends StatelessWidget {
                         ),
                       ],
                     ],
-                  ),
-                ),
               ),
 
-              const SizedBox(height: 15),
+              _transactionSectionDivider(),
 
               // ======================================================
               // PRODUK
               // ======================================================
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-
-                  child: Column(
+              Column(
                     children: [
 
                       const Align(
@@ -296,6 +281,15 @@ class TransactionDetailPage extends StatelessWidget {
                         ),
 
                       ...items.map((item) {
+                        final productName =
+                            item["product_name"]?.toString().trim() ?? "";
+                        final variantName =
+                            item["variant_name"]?.toString().trim() ?? "";
+                        final displayName = productName.isNotEmpty
+                            ? productName
+                            : variantName.isNotEmpty
+                            ? variantName
+                            : "-";
 
                         return Padding(
                           padding: const EdgeInsets.only(
@@ -330,9 +324,7 @@ class TransactionDetailPage extends StatelessWidget {
                                   children: [
 
                                     Text(
-                                      item["variant_name"]
-                                              ?.toString() ??
-                                          "-",
+                                      displayName,
 
                                       style: const TextStyle(
                                         fontWeight:
@@ -340,15 +332,14 @@ class TransactionDetailPage extends StatelessWidget {
                                       ),
                                     ),
 
-                                    Text(
-                                      item["price_list_name"]
-                                              ?.toString() ??
-                                          "-",
-
-                                      style: const TextStyle(
-                                        color: Colors.grey,
+                                    if (variantName.isNotEmpty &&
+                                        variantName != displayName)
+                                      Text(
+                                        variantName,
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
                                       ),
-                                    ),
 
                                     const SizedBox(height: 4),
 
@@ -377,21 +368,23 @@ class TransactionDetailPage extends StatelessWidget {
                         );
                       }),
                     ],
-                  ),
-                ),
               ),
 
-              const SizedBox(height: 15),
+              _transactionSectionDivider(),
 
               // ======================================================
               // RINGKASAN
               // ======================================================
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-
-                  child: Column(
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xfff4fbf6),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xffd6eddb)),
+                ),
+                child: Column(
                     children: [
 
                       const Align(
@@ -437,21 +430,16 @@ class TransactionDetailPage extends StatelessWidget {
                         bold: true,
                       ),
                     ],
-                  ),
-                ),
+              ),
               ),
 
-              const SizedBox(height: 15),
+              _transactionSectionDivider(),
 
               // ======================================================
               // PEMBAYARAN
               // ======================================================
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-
-                  child: Column(
+              Column(
                     children: [
 
                       _row(
@@ -487,8 +475,6 @@ class TransactionDetailPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                  ),
-                ),
               ),
 
               const SizedBox(height: 20),
@@ -531,10 +517,20 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
 
               const SizedBox(height: 20),
-            ],
+              ],
+                ),
+              ),
+            ),
           ),
         );
       }),
+    );
+  }
+
+  Widget _transactionSectionDivider() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      child: Divider(height: 1, thickness: 1, color: Color(0xffe9edf1)),
     );
   }
 
