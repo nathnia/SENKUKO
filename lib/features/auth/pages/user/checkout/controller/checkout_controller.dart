@@ -266,12 +266,14 @@ class CheckoutController extends GetxController {
             (entry['amount'] as num?)?.toInt() ??
             0;
 
-        final bool isVoucher = type.contains('voucher') ||
+        final bool isVoucher =
+            type.contains('voucher') ||
             type.contains('coupon') ||
             rewardType.contains('voucher') ||
             rewardType.contains('coupon');
 
-        final bool isPromo = type.contains('promo') ||
+        final bool isPromo =
+            type.contains('promo') ||
             type.contains('promotion') ||
             rewardType.contains('promo') ||
             rewardType.contains('promotion') ||
@@ -302,8 +304,10 @@ class CheckoutController extends GetxController {
       // =====================================================================
 
       if (backendGrandTotal != null) {
-        final int backendDiscount =
-            (subtotal - backendGrandTotal).clamp(0, subtotal);
+        final int backendDiscount = (subtotal - backendGrandTotal).clamp(
+          0,
+          subtotal,
+        );
         final int parsedDiscount = promoDiscount + voucherDiscount;
 
         if (backendDiscount > parsedDiscount) {
@@ -370,24 +374,113 @@ class CheckoutController extends GetxController {
     required List<dynamic> items,
     String? priceListId,
   }) async {
-    if (promoCodes.contains(promotion.code)) {
+    // -----------------------------------------------------------------------
+    // CEK PROMO MASIH VALID
+    // -----------------------------------------------------------------------
+
+    if (!promotion.isValidNow) {
       Get.snackbar(
         "Promo",
-        "Promo sudah diterapkan",
+        "Promo ini sudah tidak aktif atau sudah melewati masa berlaku.",
         snackPosition: SnackPosition.BOTTOM,
       );
+
       return;
     }
 
-    selectedPromotion.value = promotion;
+    // -----------------------------------------------------------------------
+    // CEK DUPLIKAT
+    // -----------------------------------------------------------------------
 
-    promoCodes.clear();
+    if (promoCodes.contains(promotion.code)) {
+      Get.snackbar(
+        "Promo",
+        "Promo ${promotion.name} sudah diterapkan.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      return;
+    }
+
+    // -----------------------------------------------------------------------
+    // CEK STACKABLE
+    //
+    // Promo hanya boleh digabung jika:
+    //
+    // 1. Promo yang sudah diterapkan semuanya stackable
+    // 2. Promo baru juga stackable
+    //
+    // Kalau salah satu false -> tidak boleh digabung.
+    // -----------------------------------------------------------------------
+
+    if (promoCodes.isNotEmpty) {
+      bool hasNonStackablePromo = false;
+
+      for (final code in promoCodes) {
+        final existingPromo = promotions.firstWhereOrNull(
+          (promo) => promo.code == code,
+        );
+
+        if (existingPromo != null && !existingPromo.stackable) {
+          hasNonStackablePromo = true;
+          break;
+        }
+      }
+
+      if (hasNonStackablePromo) {
+        Get.snackbar(
+          "Promo Tidak Bisa Digabung",
+          "Promo yang sedang digunakan tidak dapat digabung dengan promo lain.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        return;
+      }
+
+      if (!promotion.stackable) {
+        Get.snackbar(
+          "Promo Tidak Bisa Digabung",
+          "Promo ${promotion.name} tidak dapat digabung dengan promo lain.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        return;
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // SIMPAN PROMO LAMA
+    // -----------------------------------------------------------------------
+
+    final previousPromoCodes = [...promoCodes];
+
+    // -----------------------------------------------------------------------
+    // TAMBAHKAN PROMO BARU
+    // -----------------------------------------------------------------------
+
     promoCodes.add(promotion.code);
+
+    // Dropdown tidak perlu menyimpan item terakhir sebagai selected value.
+    selectedPromotion.value = null;
+
+    // -----------------------------------------------------------------------
+    // PREVIEW ULANG KE BACKEND
+    // -----------------------------------------------------------------------
 
     await previewDiscounts(
       subtotal: subtotal,
       items: items,
       priceListId: priceListId,
+    );
+
+    // -----------------------------------------------------------------------
+    // INFO USER
+    // -----------------------------------------------------------------------
+
+    Get.snackbar(
+      "Promo Berhasil",
+      "${promotion.name} berhasil diterapkan.",
+      snackPosition: SnackPosition.BOTTOM,
     );
   }
 
@@ -484,42 +577,42 @@ class CheckoutController extends GetxController {
       // ---------------------------------------------------------------------
 
       int voucherDiscount = 0;
-bool voucherApplied = false;
+      bool voucherApplied = false;
 
-for (final entry in appliedPromotions) {
-  if (entry is! Map) continue;
+      for (final entry in appliedPromotions) {
+        if (entry is! Map) continue;
 
-  final type = (entry['discount_type'] ?? entry['type'] ?? '')
-      .toString()
-      .toLowerCase();
+        final type = (entry['discount_type'] ?? entry['type'] ?? '')
+            .toString()
+            .toLowerCase();
 
-  final rewardType = (entry['reward_type'] ?? '')
-      .toString()
-      .toLowerCase();
+        final rewardType = (entry['reward_type'] ?? '')
+            .toString()
+            .toLowerCase();
 
-  final amount =
-      (entry['discount_amount'] as num?)?.toInt() ??
-      (entry['amount'] as num?)?.toInt() ??
-      0;
+        final amount =
+            (entry['discount_amount'] as num?)?.toInt() ??
+            (entry['amount'] as num?)?.toInt() ??
+            0;
 
-  if (type.contains('voucher')) {
-    voucherApplied = true;
-    voucherDiscount += amount;
+        if (type.contains('voucher')) {
+          voucherApplied = true;
+          voucherDiscount += amount;
 
-    if (rewardType == "free_item") {
-      print("Voucher Free Item berhasil diterapkan");
-    }
-  }
-}
+          if (rewardType == "free_item") {
+            print("Voucher Free Item berhasil diterapkan");
+          }
+        }
+      }
 
-if (!voucherApplied) {
-  Get.snackbar(
-    'Kode Voucher',
-    'Kode tidak valid atau tidak berlaku untuk pesanan ini.',
-    snackPosition: SnackPosition.BOTTOM,
-  );
-  return;
-}
+      if (!voucherApplied) {
+        Get.snackbar(
+          'Kode Voucher',
+          'Kode tidak valid atau tidak berlaku untuk pesanan ini.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
 
       // ---------------------------------------------------------------------
       // SIMPAN VOUCHER
@@ -567,14 +660,26 @@ if (!voucherApplied) {
     required List<dynamic> items,
     String? priceListId,
   }) async {
-    promoCodes.clear();
+    if (!promoCodes.contains(code)) {
+      return;
+    }
 
+    promoCodes.remove(code);
+
+    // Reset dropdown
     selectedPromotion.value = null;
 
+    // Hitung ulang diskon setelah promo dihapus
     await previewDiscounts(
       subtotal: subtotal,
       items: items,
       priceListId: priceListId,
+    );
+
+    Get.snackbar(
+      "Promo Dibatalkan",
+      "Promo $code berhasil dibatalkan.",
+      snackPosition: SnackPosition.BOTTOM,
     );
   }
 
@@ -795,8 +900,11 @@ if (!voucherApplied) {
   // PAYMENT STATUS POLLING
   // =========================================================================
 
-  void _startStatusChecking(String transactionId, Map<String, dynamic> data,
-      {bool showDialog = true}) {
+  void _startStatusChecking(
+    String transactionId,
+    Map<String, dynamic> data, {
+    bool showDialog = true,
+  }) {
     if (showDialog) {
       Get.defaultDialog(
         title: "Menunggu Pembayaran",
@@ -1033,6 +1141,7 @@ if (!voucherApplied) {
     regionController.dispose();
     subregionController.dispose();
     noteController.dispose();
+    promoController.dispose();
     voucherController.dispose();
     super.onClose();
   }

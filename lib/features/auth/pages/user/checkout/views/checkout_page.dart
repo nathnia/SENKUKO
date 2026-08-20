@@ -136,56 +136,55 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       margin: EdgeInsets.zero,
                       padding: const EdgeInsets.all(20),
                       child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // =====================================================
-                      // ALAMAT
-                      // =====================================================
-                      _ShippingAddressCard(
-                        userName: user['name'] ?? '-',
-                        userPhone: user['phone'] ?? '-',
-                        checkout: _checkout,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // =====================================================
+                          // ALAMAT
+                          // =====================================================
+                          _ShippingAddressCard(
+                            userName: user['name'] ?? '-',
+                            userPhone: user['phone'] ?? '-',
+                            checkout: _checkout,
+                          ),
+
+                          const _CheckoutSectionDivider(),
+
+                          // =====================================================
+                          // PRODUK
+                          // =====================================================
+                          _ProductListCard(items: _items),
+
+                          const _CheckoutSectionDivider(),
+
+                          // =====================================================
+                          // PAYMENT
+                          // =====================================================
+                          _PaymentMethodCard(checkout: _checkout),
+
+                          const _CheckoutSectionDivider(),
+
+                          // =====================================================
+                          // PROMO & VOUCHER
+                          // =====================================================
+                          _PromoVoucherCard(
+                            checkout: _checkout,
+                            subtotal: _subtotal,
+                            items: _items,
+                          ),
+
+                          const _CheckoutSectionDivider(),
+
+                          // =====================================================
+                          // SUMMARY
+                          // =====================================================
+                          _SummaryCard(
+                            checkout: _checkout,
+                            subtotal: _subtotal,
+                            total: currentTotal,
+                            format: _formatRupiah,
+                          ),
+                        ],
                       ),
-
-                      const _CheckoutSectionDivider(),
-
-                      // =====================================================
-                      // PRODUK
-                      // =====================================================
-                      _ProductListCard(items: _items),
-
-                      const _CheckoutSectionDivider(),
-
-                      // =====================================================
-                      // PAYMENT
-                      // =====================================================
-                      _PaymentMethodCard(checkout: _checkout),
-
-                      const _CheckoutSectionDivider(),
-
-                      // =====================================================
-                      // PROMO & VOUCHER
-                      // =====================================================
-                      _PromoVoucherCard(
-                        checkout: _checkout,
-                        subtotal: _subtotal,
-                        items: _items,
-                      ),
-
-                      const _CheckoutSectionDivider(),
-
-                      // =====================================================
-                      // SUMMARY
-                      // =====================================================
-                      _SummaryCard(
-                        checkout: _checkout,
-                        subtotal: _subtotal,
-                        total: currentTotal,
-                        format: _formatRupiah,
-                      ),
-
-                    ],
-                  ),
                     ),
                   ),
                 ),
@@ -292,120 +291,120 @@ class _ShippingAddressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _SectionHeader(
-            icon: Icons.location_on,
-            title: 'Alamat Pengiriman',
-          ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(
+          icon: Icons.location_on,
+          title: 'Alamat Pengiriman',
+        ),
 
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
 
-          Text(
-            userName,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
+        Text(
+          userName,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
 
-          const SizedBox(height: 4),
+        const SizedBox(height: 4),
 
-          Text(userPhone, style: const TextStyle(color: Colors.grey)),
+        Text(userPhone, style: const TextStyle(color: Colors.grey)),
 
-          const Divider(height: 24),
+        const Divider(height: 24),
 
-          Obx(() {
-            if (!checkout.isEditingAddress.value) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    checkout.addressController.text.isEmpty
-                        ? 'Alamat belum diisi'
-                        : checkout.addressController.text,
-                    style: const TextStyle(fontSize: 15, height: 1.5),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        checkout.isEditingAddress.value = true;
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('Edit'),
-                    ),
-                  ),
-                ],
-              );
-            }
-
+        Obx(() {
+          if (!checkout.isEditingAddress.value) {
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: checkout.addressController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Alamat Pengiriman',
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                Text(
+                  checkout.addressController.text.isEmpty
+                      ? 'Alamat belum diisi'
+                      : checkout.addressController.text,
+                  style: const TextStyle(fontSize: 15, height: 1.5),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          final allowed = await AuthGuard.checkUser();
-
-                          if (!allowed) return;
-
-                          // proses checkout
-                          checkout.isEditingAddress.value = false;
-                          await checkout.loadProfile();
-                        },
-                        child: const Text('Batal'),
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          checkout.isEditingAddress.value = false;
-                        },
-                        child: const Text('Simpan'),
-                      ),
-                    ),
-                  ],
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      checkout.isEditingAddress.value = true;
+                    },
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Edit'),
+                  ),
                 ),
               ],
             );
-          }),
+          }
 
-          const SizedBox(height: 16),
-
-          TextField(
-            controller: checkout.noteController,
-            maxLines: 2,
-            decoration: InputDecoration(
-              hintText: 'Catatan untuk kurir (opsional)',
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+          return Column(
+            children: [
+              TextField(
+                controller: checkout.addressController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Alamat Pengiriman',
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
+
+              const SizedBox(height: 10),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final allowed = await AuthGuard.checkUser();
+
+                        if (!allowed) return;
+
+                        // proses checkout
+                        checkout.isEditingAddress.value = false;
+                        await checkout.loadProfile();
+                      },
+                      child: const Text('Batal'),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        checkout.isEditingAddress.value = false;
+                      },
+                      child: const Text('Simpan'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }),
+
+        const SizedBox(height: 16),
+
+        TextField(
+          controller: checkout.noteController,
+          maxLines: 2,
+          decoration: InputDecoration(
+            hintText: 'Catatan untuk kurir (opsional)',
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
           ),
-        ],
+        ),
+      ],
     );
   }
 }
@@ -430,20 +429,20 @@ class _ProductListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Produk Pesanan',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Produk Pesanan',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
 
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
 
-          if (items.isEmpty)
-            const Center(child: Text('Tidak ada item yang dipilih.'))
-          else
-            ...items.map(_itemTile),
-        ],
+        if (items.isEmpty)
+          const Center(child: Text('Tidak ada item yang dipilih.'))
+        else
+          ...items.map(_itemTile),
+      ],
     );
   }
 
@@ -532,50 +531,50 @@ class _PaymentMethodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Metode Pembayaran',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Metode Pembayaran',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
 
-          const SizedBox(height: 12),
+        const SizedBox(height: 12),
 
-          Obx(() {
-            if (checkout.methods.isEmpty) {
-              return const Text('Tidak ada metode pembayaran yang tersedia.');
-            }
+        Obx(() {
+          if (checkout.methods.isEmpty) {
+            return const Text('Tidak ada metode pembayaran yang tersedia.');
+          }
 
-            return Column(
-              children: checkout.methods.map((method) {
-                final String value = method['value'] ?? '';
+          return Column(
+            children: checkout.methods.map((method) {
+              final String value = method['value'] ?? '';
 
-                final String label = method['label'] ?? '';
+              final String label = method['label'] ?? '';
 
-                final bool isSelected = checkout.paymentMethod.value == value;
+              final bool isSelected = checkout.paymentMethod.value == value;
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
 
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: isSelected ? Colors.green : Colors.grey.shade300,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isSelected ? Colors.green : Colors.grey.shade300,
                   ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
 
-                  child: RadioListTile<String>(
-                    activeColor: Colors.green,
-                    title: Text(label),
-                    value: value,
-                    groupValue: checkout.paymentMethod.value,
-                    onChanged: checkout.changeMethod,
-                  ),
-                );
-              }).toList(),
-            );
-          }),
-        ],
+                child: RadioListTile<String>(
+                  activeColor: Colors.green,
+                  title: Text(label),
+                  value: value,
+                  groupValue: checkout.paymentMethod.value,
+                  onChanged: checkout.changeMethod,
+                ),
+              );
+            }).toList(),
+          );
+        }),
+      ],
     );
   }
 }
@@ -610,167 +609,307 @@ class _PromoVoucherCard extends StatelessWidget {
     final priceListId = _priceListId();
 
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ====================================================================
+        // PROMO
+        // ====================================================================
+        const Row(
+          children: [
+            Icon(Icons.local_offer_outlined, color: Colors.green),
+            SizedBox(width: 8),
+            Text(
+              "Promo",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
 
-          // PROMO
-          const Row(
-            children: [
-              Icon(Icons.local_offer_outlined, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                "Promo",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ],
-          ),
+        const SizedBox(height: 4),
 
-          const SizedBox(height: 4),
-
-          Obx(() {
-            if (checkout.promoCodes.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.only(left: 32),
-                child: Text(
-                  "Pilih promo yang tersedia",
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                ),
-              );
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(left: 32),
+        // --------------------------------------------------------------------
+        // STATUS PROMO
+        // --------------------------------------------------------------------
+        Obx(() {
+          if (checkout.promoCodes.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.only(left: 32),
               child: Text(
-                "${checkout.promoCodes.length} promo diterapkan",
-                style: const TextStyle(color: Colors.green, fontSize: 13),
+                "Pilih promo yang tersedia",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
               ),
             );
-          }),
+          }
 
-          const SizedBox(height: 14),
-
-          Obx(() {
-            if (checkout.promotions.isEmpty) {
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 14,
-                  horizontal: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  "Belum ada promo tersedia",
-                  style: TextStyle(color: Colors.grey),
-                ),
-              );
-            }
-
-            return DropdownButtonFormField<PromotionModel>(
-              isExpanded: true,
-              value: checkout.selectedPromotion.value,
-
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-
-                prefixIcon: const Icon(Icons.local_offer),
-
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
+          return Padding(
+            padding: const EdgeInsets.only(left: 32),
+            child: Text(
+              "${checkout.promoCodes.length} promo diterapkan",
+              style: const TextStyle(
+                color: Colors.green,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
+            ),
+          );
+        }),
 
-              hint: const Text("Pilih Promo"),
+        const SizedBox(height: 14),
 
-              items: checkout.promotions.map((promo) {
-                return DropdownMenuItem(
-                  value: promo,
-                  child: Text(promo.name, overflow: TextOverflow.ellipsis),
-                );
-              }).toList(),
+        // --------------------------------------------------------------------
+        // PROMO YANG SUDAH DIPAKAI
+        // --------------------------------------------------------------------
+        Obx(() {
+          if (checkout.promoCodes.isEmpty) {
+            return const SizedBox.shrink();
+          }
 
-              onChanged: (promo) {
-                if (promo == null) return;
+          final appliedPromos = checkout.promotions.where((promo) {
+            return checkout.promoCodes.contains(promo.code);
+          }).toList();
 
-                checkout.applySelectedPromotion(
-                  promotion: promo,
-                  subtotal: subtotal,
-                  items: items,
-                  priceListId: priceListId,
-                );
-              },
-            );
-          }),
+          if (appliedPromos.isEmpty) {
+            return const SizedBox.shrink();
+          }
 
-          const Divider(height: 24),
-
-          // ================================================================
-          // VOUCHER
-          // ================================================================
-          const Row(
+          return Column(
             children: [
-              Icon(Icons.card_giftcard, color: Colors.green),
+              ...appliedPromos.map((promo) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.local_offer,
+                        size: 20,
+                        color: Colors.green,
+                      ),
 
-              SizedBox(width: 8),
+                      const SizedBox(width: 10),
 
-              Text(
-                'Voucher',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              promo.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      IconButton(
+                        tooltip: "Batalkan promo",
+                        icon: const Icon(Icons.close, size: 20),
+                        color: Colors.redAccent,
+                        onPressed: () {
+                          checkout.removePromoCode(
+                            promo.code,
+                            subtotal: subtotal,
+                            items: items,
+                            priceListId: priceListId,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ],
-          ),
+          );
+        }),
 
-          const SizedBox(height: 16),
+        const SizedBox(height: 6),
 
-          _CodeField(
-            controller: checkout.voucherController,
-            label: 'Kode Voucher',
-            hint: 'Contoh: MEMBER10',
-            icon: Icons.card_giftcard,
-            onApplied: () {
-              checkout.applyVoucher(
-                subtotal: subtotal,
-                items: items,
-                priceListId: priceListId,
-              );
-            },
-          ),
+        // --------------------------------------------------------------------
+        // DROPDOWN PROMO
+        // --------------------------------------------------------------------
+        Obx(() {
+          final availablePromotions = checkout.promotions
+              .where((promo) => promo.isValidNow)
+              .toList();
 
-          const SizedBox(height: 12),
+          if (availablePromotions.isEmpty) {
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 20, color: Colors.grey),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "Belum ada promo yang tersedia.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
 
-          Obx(() {
-            if (checkout.voucherCodes.isEmpty) {
-              return const SizedBox.shrink();
-            }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButtonFormField<PromotionModel>(
+                key: ValueKey("promo-dropdown-${checkout.promoCodes.length}"),
 
-            return Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: checkout.voucherCodes.map((code) {
-                  return InputChip(
-                    label: Text(code),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () {
-                      checkout.removeVoucherCode(
-                        code,
-                        subtotal: subtotal,
-                        items: items,
-                        priceListId: priceListId,
-                      );
-                    },
+                value: null,
+
+                isExpanded: true,
+
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(
+                    Icons.local_offer,
+                    color: Colors.green,
+                  ),
+
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+
+                hint: const Text("Pilih Promo"),
+
+                items: availablePromotions.map((promo) {
+                  final alreadyApplied = checkout.promoCodes.contains(
+                    promo.code,
+                  );
+
+                  return DropdownMenuItem<PromotionModel>(
+                    value: promo,
+                    enabled: !alreadyApplied,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            promo.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: alreadyApplied
+                                  ? Colors.grey
+                                  : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 }).toList(),
+
+                onChanged: (promo) {
+                  if (promo == null) return;
+
+                  checkout.applySelectedPromotion(
+                    promotion: promo,
+                    subtotal: subtotal,
+                    items: items,
+                    priceListId: priceListId,
+                  );
+                },
               ),
+            ],
+          );
+        }),
+
+        const Divider(height: 24),
+
+        // ====================================================================
+        // VOUCHER
+        // ====================================================================
+        const Row(
+          children: [
+            Icon(Icons.card_giftcard, color: Colors.green),
+
+            SizedBox(width: 8),
+
+            Text(
+              'Voucher',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // --------------------------------------------------------------------
+        // INPUT VOUCHER
+        // --------------------------------------------------------------------
+        _CodeField(
+          controller: checkout.voucherController,
+          label: 'Kode Voucher',
+          hint: 'Contoh: MEMBER10',
+          icon: Icons.card_giftcard,
+          onApplied: () {
+            checkout.applyVoucher(
+              subtotal: subtotal,
+              items: items,
+              priceListId: priceListId,
             );
-          }),
-        ],
+          },
+        ),
+
+        const SizedBox(height: 12),
+
+        // --------------------------------------------------------------------
+        // VOUCHER YANG SUDAH DIPAKAI
+        // --------------------------------------------------------------------
+        Obx(() {
+          if (checkout.voucherCodes.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: checkout.voucherCodes.map((code) {
+                return InputChip(
+                  label: Text(code),
+
+                  deleteIcon: const Icon(Icons.close, size: 18),
+
+                  onDeleted: () {
+                    checkout.removeVoucherCode(
+                      code,
+                      subtotal: subtotal,
+                      items: items,
+                      priceListId: priceListId,
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
@@ -970,57 +1109,57 @@ class _BottomBar extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 720),
             child: LayoutBuilder(
               builder: (context, constraints) {
-            final totalInfo = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Total', style: TextStyle(color: Colors.grey)),
-                Text(
-                  format(total),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            );
+                final totalInfo = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Total', style: TextStyle(color: Colors.grey)),
+                    Text(
+                      format(total),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                );
 
-            final paymentButton = SizedBox(
-              height: 50,
-              child: Obx(() {
-                if (isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
+                final paymentButton = SizedBox(
+                  height: 50,
+                  child: Obx(() {
+                    if (isLoading.value) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    return AppButton(
+                      text: 'Bayar ${format(total)}',
+                      onPressed: onPayPressed,
+                    );
+                  }),
+                );
+
+                if (constraints.maxWidth < 380) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      totalInfo,
+                      const SizedBox(height: 12),
+                      paymentButton,
+                    ],
+                  );
                 }
 
-                return AppButton(
-                  text: 'Bayar ${format(total)}',
-                  onPressed: onPayPressed,
+                return Row(
+                  children: [
+                    Expanded(child: totalInfo),
+                    const SizedBox(width: 12),
+                    SizedBox(width: 170, child: paymentButton),
+                  ],
                 );
-              }),
-            );
-
-            if (constraints.maxWidth < 380) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  totalInfo,
-                  const SizedBox(height: 12),
-                  paymentButton,
-                ],
-              );
-            }
-
-            return Row(
-              children: [
-                Expanded(child: totalInfo),
-                const SizedBox(width: 12),
-                SizedBox(width: 170, child: paymentButton),
-              ],
-            );
               },
             ),
           ),
