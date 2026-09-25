@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -47,6 +48,18 @@ class LoginController extends GetxController {
       } else {
         Get.snackbar("Login Gagal", result["message"] ?? "Terjadi kesalahan");
       }
+    } on FormatException catch (_) {
+      Get.snackbar(
+        "Login Gagal",
+        "Backend sedang tidak bisa diakses atau URL login tidak valid. Cek BASE_URL di file .env.",
+      );
+    } on HttpException catch (e) {
+      Get.snackbar("Login Gagal", e.message);
+    } on SocketException catch (_) {
+      Get.snackbar(
+        "Login Gagal",
+        "Koneksi ke server gagal. Pastikan backend online dan BASE_URL benar.",
+      );
     } catch (e) {
       Get.snackbar("Login Gagal", "Terjadi kesalahan: $e");
     } finally {

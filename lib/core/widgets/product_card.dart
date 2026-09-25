@@ -51,9 +51,9 @@ class ProductCard extends StatelessWidget {
             Container(
               height: 105,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: const BorderRadius.vertical(
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.vertical(
                   top: Radius.circular(18),
                 ),
               ),
@@ -64,6 +64,19 @@ class ProductCard extends StatelessWidget {
                     ? Image.network(
                         product.imageUrl!,
                         fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          );
+                        },
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.image_outlined,
                           size: 42,

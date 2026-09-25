@@ -44,37 +44,28 @@ class TransactionDetailPage extends StatelessWidget {
       Get.delete<TransactionDetailController>();
     }
 
-    final controller = Get.put(
-      TransactionDetailController(),
-    );
+    final controller = Get.put(TransactionDetailController());
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Detail Transaksi"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Detail Transaksi"), centerTitle: true),
 
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final trx = controller.detail.value;
 
         if (trx == null) {
-          return const Center(
-            child: Text("Data tidak ditemukan"),
-          );
+          return const Center(child: Text("Data tidak ditemukan"));
         }
 
         // ============================================================
         // AMAN DARI NULL
         // ============================================================
 
-        final List<dynamic> items =
-            trx["items"] is List ? trx["items"] : [];
+        final List<dynamic> items = trx["items"] is List ? trx["items"] : [];
+        final freeItems = _freeItemRewards(trx, items);
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -86,438 +77,404 @@ class TransactionDetailPage extends StatelessWidget {
                 margin: EdgeInsets.zero,
                 padding: const EdgeInsets.all(20),
                 child: Column(
-              children: [
-
-              // ======================================================
-              // STATUS
-              // ======================================================
-
-              Column(
-                    children: [
-
-                      Icon(
-                        Icons.receipt_long,
-                        size: 60,
-                        color: trx["status"]?.toString().toLowerCase() ==
-                                "cancelled"
-                            ? Colors.red
-                            : Colors.green,
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Text(
-                        trx["invoice_number"]?.toString() ?? "-",
-
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                  children: [
+                    // ======================================================
+                    // STATUS
+                    // ======================================================
+                    Column(
+                      children: [
+                        Icon(
+                          Icons.receipt_long,
+                          size: 60,
+                          color:
+                              trx["status"]?.toString().toLowerCase() ==
+                                  "cancelled"
+                              ? Colors.red
+                              : Colors.green,
                         ),
 
-                        textAlign: TextAlign.center,
-                      ),
+                        const SizedBox(height: 10),
 
-                      const SizedBox(height: 12),
+                        Text(
+                          trx["invoice_number"]?.toString() ?? "-",
 
-                      Chip(
-                        backgroundColor:
-                            trx["status"]?.toString().toLowerCase() ==
-                                    "cancelled"
-                                ? Colors.red.shade100
-                                : Colors.green.shade100,
-
-                        label: Text(
-                          controller.statusText(
-                            trx["status"]?.toString() ?? "-",
-                          ),
-
-                          style: TextStyle(
-                            color:
-                                trx["status"]
-                                            ?.toString()
-                                            .toLowerCase() ==
-                                        "cancelled"
-                                    ? Colors.red
-                                    : Colors.green,
-
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: 18,
                           ),
+
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ],
-              ),
-
-              _transactionSectionDivider(),
-
-              // ======================================================
-              // CUSTOMER
-              // ======================================================
-
-              Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
-                    children: [
-
-                      const Text(
-                        "Customer",
-
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                        ),
-                      ),
-
-                      const Divider(),
-
-                      Text(
-                        trx["customer_name"]?.toString() ?? "-",
-
-                        style: const TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-              ),
-
-              _transactionSectionDivider(),
-
-              // ======================================================
-              // ALAMAT
-              // ======================================================
-
-              Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
-                    children: [
-
-                      const Text(
-                        "Alamat Pengiriman",
-
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                        ),
-                      ),
-
-                      const Divider(),
-
-                      Text(
-                        trx["delivery_address"]
-                                ?.toString() ??
-                            "-",
-                      ),
-
-                      const SizedBox(height: 5),
-
-                      Text(
-                        "${trx["delivery_subregion"] ?? "-"}, "
-                        "${trx["delivery_region"] ?? "-"}",
-                      ),
-
-                      Text(
-                        trx["delivery_city"]
-                                ?.toString() ??
-                            "-",
-                      ),
-
-                      if ((trx["delivery_note"] ?? "")
-                          .toString()
-                          .isNotEmpty) ...[
 
                         const SizedBox(height: 12),
 
-                        const Text(
-                          "Catatan",
+                        Chip(
+                          backgroundColor:
+                              trx["status"]?.toString().toLowerCase() ==
+                                  "cancelled"
+                              ? Colors.red.shade100
+                              : Colors.green.shade100,
 
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                          label: Text(
+                            controller.statusText(
+                              trx["status"]?.toString() ?? "-",
+                            ),
+
+                            style: TextStyle(
+                              color:
+                                  trx["status"]?.toString().toLowerCase() ==
+                                      "cancelled"
+                                  ? Colors.red
+                                  : Colors.green,
+
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-
-                        Text(
-                          trx["delivery_note"]
-                                  .toString(),
-                        ),
                       ],
-                    ],
-              ),
+                    ),
 
-              _transactionSectionDivider(),
+                    _transactionSectionDivider(),
 
-              // ======================================================
-              // PRODUK
-              // ======================================================
+                    // ======================================================
+                    // CUSTOMER
+                    // ======================================================
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
-              Column(
-                    children: [
-
-                      const Align(
-                        alignment: Alignment.centerLeft,
-
-                        child: Text(
-                          "Produk",
+                      children: [
+                        const Text(
+                          "Customer",
 
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                           ),
                         ),
-                      ),
 
-                      const Divider(),
+                        const Divider(),
 
-                      if (items.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
+                        Text(
+                          trx["customer_name"]?.toString() ?? "-",
+
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+
+                    _transactionSectionDivider(),
+
+                    // ======================================================
+                    // ALAMAT
+                    // ======================================================
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      children: [
+                        const Text(
+                          "Alamat Pengiriman",
+
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+
+                        const Divider(),
+
+                        Text(trx["delivery_address"]?.toString() ?? "-"),
+
+                        const SizedBox(height: 5),
+
+                        Text(
+                          "${trx["delivery_subregion"] ?? "-"}, "
+                          "${trx["delivery_region"] ?? "-"}",
+                        ),
+
+                        Text(trx["delivery_city"]?.toString() ?? "-"),
+
+                        if ((trx["delivery_note"] ?? "")
+                            .toString()
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 12),
+
+                          const Text(
+                            "Catatan",
+
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+
+                          Text(trx["delivery_note"].toString()),
+                        ],
+                      ],
+                    ),
+
+                    _transactionSectionDivider(),
+
+                    // ======================================================
+                    // PRODUK
+                    // ======================================================
+                    Column(
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerLeft,
 
                           child: Text(
-                            "Detail produk tidak tersedia.",
+                            "Produk",
+
                             style: TextStyle(
-                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
                             ),
                           ),
                         ),
 
-                      ...items.map((item) {
-                        final productName =
-                            item["product_name"]?.toString().trim() ?? "";
-                        final variantName =
-                            item["variant_name"]?.toString().trim() ?? "";
-                        final displayName = productName.isNotEmpty
-                            ? productName
-                            : variantName.isNotEmpty
-                            ? variantName
-                            : "-";
+                        const Divider(),
 
-                        return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 14,
+                        if (items.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+
+                            child: Text(
+                              "Detail produk tidak tersedia.",
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ),
 
-                          child: Row(
-                            children: [
+                        ...items.map((item) {
+                          final productName =
+                              item["product_name"]?.toString().trim() ?? "";
+                          final variantName =
+                              item["variant_name"]?.toString().trim() ?? "";
+                          final displayName = productName.isNotEmpty
+                              ? productName
+                              : variantName.isNotEmpty
+                              ? variantName
+                              : "-";
 
-                              Container(
-                                width: 55,
-                                height: 55,
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
 
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  borderRadius:
-                                      BorderRadius.circular(8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 55,
+                                  height: 55,
+
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+
+                                  child: const Icon(Icons.shopping_bag),
                                 ),
 
-                                child: const Icon(
-                                  Icons.shopping_bag,
-                                ),
-                              ),
+                                const SizedBox(width: 12),
 
-                              const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
 
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-
-                                  children: [
-
-                                    Text(
-                                      displayName,
-
-                                      style: const TextStyle(
-                                        fontWeight:
-                                            FontWeight.bold,
-                                      ),
-                                    ),
-
-                                    if (variantName.isNotEmpty &&
-                                        variantName != displayName)
+                                    children: [
                                       Text(
-                                        variantName,
+                                        displayName,
+
                                         style: const TextStyle(
-                                          color: Colors.grey,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
 
-                                    const SizedBox(height: 4),
+                                      if (variantName.isNotEmpty &&
+                                          variantName != displayName)
+                                        Text(
+                                          variantName,
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
 
+                                      const SizedBox(height: 4),
+
+                                      Text(
+                                        "${item["qty"] ?? 0} x "
+                                        "${controller.rupiah(item["unit_price"])}",
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                Text(
+                                  controller.rupiah(item["subtotal"]),
+
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+
+                        if (freeItems.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.card_giftcard,
+                                      color: Colors.orange,
+                                    ),
+                                    SizedBox(width: 8),
                                     Text(
-                                      "${item["qty"] ?? 0} x "
-                                      "${controller.rupiah(
-                                        item["unit_price"],
-                                      )}",
+                                      "Gratis dari promo",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-
-                              Text(
-                                controller.rupiah(
-                                  item["subtotal"],
+                                const SizedBox(height: 8),
+                                ...freeItems.map(
+                                  (item) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Text("• $item"),
+                                  ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
 
-                                style: const TextStyle(
-                                  fontWeight:
-                                      FontWeight.bold,
-                                ),
+                    _transactionSectionDivider(),
+
+                    // ======================================================
+                    // RINGKASAN
+                    // ======================================================
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xfff4fbf6),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xffd6eddb)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Align(
+                            alignment: Alignment.centerLeft,
+
+                            child: Text(
+                              "Ringkasan Pembayaran",
+
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
                               ),
-                            ],
+                            ),
                           ),
-                        );
-                      }),
-                    ],
-              ),
 
-              _transactionSectionDivider(),
+                          const Divider(),
 
-              // ======================================================
-              // RINGKASAN
-              // ======================================================
+                          _row("Subtotal", controller.rupiah(trx["subtotal"])),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xfff4fbf6),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xffd6eddb)),
-                ),
-                child: Column(
-                    children: [
+                          const SizedBox(height: 10),
 
-                      const Align(
-                        alignment: Alignment.centerLeft,
-
-                        child: Text(
-                          "Ringkasan Pembayaran",
-
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
+                          _row(
+                            "Diskon",
+                            controller.rupiah(trx["total_discount"]),
                           ),
-                        ),
+
+                          const Divider(),
+
+                          _row(
+                            "Grand Total",
+
+                            controller.rupiah(trx["grand_total"]),
+
+                            bold: true,
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const Divider(),
+                    _transactionSectionDivider(),
 
-                      _row(
-                        "Subtotal",
-                        controller.rupiah(
-                          trx["subtotal"],
-                        ),
-                      ),
+                    // ======================================================
+                    // PEMBAYARAN
+                    // ======================================================
+                    Column(
+                      children: [
+                        _row(
+                          "Metode",
 
-                      const SizedBox(height: 10),
-
-                      _row(
-                        "Diskon",
-                        controller.rupiah(
-                          trx["total_discount"],
-                        ),
-                      ),
-
-                      const Divider(),
-
-                      _row(
-                        "Grand Total",
-
-                        controller.rupiah(
-                          trx["grand_total"],
-                        ),
-
-                        bold: true,
-                      ),
-                    ],
-              ),
-              ),
-
-              _transactionSectionDivider(),
-
-              // ======================================================
-              // PEMBAYARAN
-              // ======================================================
-
-              Column(
-                    children: [
-
-                      _row(
-                        "Metode",
-
-                        trx["payment_method"]
-                                ?.toString()
-                                .toUpperCase() ??
-                            "-",
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      _row(
-                        "Status Pembayaran",
-
-                        controller.paymentStatusText(
-                          trx["payment_status"]
-                                  ?.toString() ??
+                          trx["payment_method"]?.toString().toUpperCase() ??
                               "-",
                         ),
-                      ),
 
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 10),
 
-                      _row(
-                        "Tanggal",
+                        _row(
+                          "Status Pembayaran",
 
-                        controller.formatDate(
-                          trx["transacted_at"]
-                                  ?.toString() ??
-                              "-",
+                          controller.paymentStatusText(
+                            trx["payment_status"]?.toString() ?? "-",
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        _row(
+                          "Tanggal",
+
+                          controller.formatDate(
+                            trx["transacted_at"]?.toString() ?? "-",
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ======================================================
+                    // BUTTON CANCEL
+                    // ======================================================
+                    if (controller.canCancelTransaction)
+                      SizedBox(
+                        width: double.infinity,
+
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            _showCancelConfirmation(context, controller);
+                          },
+
+                          icon: const Icon(Icons.cancel_outlined),
+
+                          label: const Text("Batalkan Transaksi"),
+
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
                         ),
                       ),
-                    ],
-              ),
 
-              const SizedBox(height: 20),
-
-              // ======================================================
-              // BUTTON CANCEL
-              // ======================================================
-
-              if (controller.canCancelTransaction)
-
-                SizedBox(
-                  width: double.infinity,
-
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showCancelConfirmation(
-                        context,
-                        controller,
-                      );
-                    },
-
-                    icon: const Icon(
-                      Icons.cancel_outlined,
-                    ),
-
-                    label: const Text(
-                      "Batalkan Transaksi",
-                    ),
-
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-
-                      padding:
-                          const EdgeInsets.symmetric(
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                ),
-
-              const SizedBox(height: 20),
-              ],
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
             ),
@@ -534,21 +491,105 @@ class TransactionDetailPage extends StatelessWidget {
     );
   }
 
+  List<String> _freeItemRewards(
+    Map<String, dynamic> transaction,
+    List<dynamic> transactionItems,
+  ) {
+    final rewards = <String>{};
+
+    void addValue(dynamic value) {
+      if (value is List) {
+        for (final item in value) {
+          addValue(item);
+        }
+        return;
+      }
+
+      if (value is Map) {
+        final item = Map<String, dynamic>.from(value);
+        final name =
+            [
+                  "free_item_name",
+                  "free_item",
+                  "item_name",
+                  "product_name",
+                  "reward_name",
+                  "reward_product_name",
+                  "free_product_name",
+                  "gift_item_name",
+                  "gift_product_name",
+                  "reward_product",
+                  "name",
+                ]
+                .map((key) => item[key])
+                .firstWhere(
+                  (value) =>
+                      value != null && value.toString().trim().isNotEmpty,
+                  orElse: () => null,
+                );
+        if (name != null && name is! Map && name is! List) {
+          rewards.add(name.toString().trim());
+        }
+        return;
+      }
+
+      final name = value?.toString().trim() ?? "";
+      if (name.isNotEmpty) rewards.add(name);
+    }
+
+    for (final key in ["free_item_rewards", "free_items", "gift_items"]) {
+      addValue(transaction[key]);
+    }
+
+    for (final value in transactionItems) {
+      if (value is! Map) continue;
+      final item = Map<String, dynamic>.from(value);
+      final itemType = "${item["type"] ?? ""} ${item["reward_type"] ?? ""}"
+          .toLowerCase();
+      final isFreeItem =
+          item["is_free_item"] == true ||
+          item["is_gift"] == true ||
+          itemType.contains("free_item") ||
+          itemType.contains("free item") ||
+          itemType.contains("gift") ||
+          item["free_item"] == true;
+      if (isFreeItem) addValue(item);
+    }
+
+    final promotions =
+        transaction["applied_promotions"] ??
+        transaction["promotion_rewards"] ??
+        transaction["promotions"];
+    if (promotions is List) {
+      for (final promotion in promotions) {
+        if (promotion is! Map) continue;
+        final data = Map<String, dynamic>.from(promotion);
+        final type =
+            "${data["type"] ?? ""} ${data["discount_type"] ?? ""} "
+                    "${data["reward_type"] ?? ""}"
+                .toLowerCase();
+        if (type.contains("free_item") ||
+            type.contains("free item") ||
+            type.contains("gift") ||
+            data["is_free_item"] == true ||
+            data["free_item"] == true) {
+          addValue(data);
+        }
+      }
+    }
+
+    return rewards.toList();
+  }
+
   // ============================================================
   // ROW
   // ============================================================
 
-  Widget _row(
-    String title,
-    String value, {
-    bool bold = false,
-  }) {
+  Widget _row(String title, String value, {bool bold = false}) {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
       children: [
-
         Text(title),
 
         Flexible(
@@ -558,9 +599,7 @@ class TransactionDetailPage extends StatelessWidget {
             textAlign: TextAlign.end,
 
             style: TextStyle(
-              fontWeight: bold
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ),

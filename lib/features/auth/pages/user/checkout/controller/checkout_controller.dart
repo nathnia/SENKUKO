@@ -40,6 +40,8 @@ class CheckoutController extends GetxController {
 
   final paymentMethod = "cod".obs;
 
+  final isCodAvailable = false.obs;
+
   final isLoading = false.obs;
 
   final methods = [
@@ -65,6 +67,8 @@ class CheckoutController extends GetxController {
 
   final voucherDiscountAmount = 0.obs;
 
+  final freeItemRewards = <String>[].obs;
+
   final totalPrice = 0.obs;
 
   final discount = 0.obs;
@@ -88,7 +92,131 @@ class CheckoutController extends GetxController {
   void changeMethod(String? method) {
     if (method == null || method.isEmpty) return;
 
+    if (method == 'cod' && !isCodAvailable.value) {
+      Get.snackbar(
+        'COD Tidak Tersedia',
+        'COD hanya tersedia untuk alamat di kota Jepara.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     paymentMethod.value = method;
+  }
+
+  static bool isJeparaCity(String city) {
+    final normalized = city
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    return normalized == 'jepara' ||
+        normalized == 'kota jepara' ||
+        normalized == 'kabupaten jepara' ||
+        normalized == 'kab jepara';
+  }
+
+  void refreshCodAvailability() {
+    final available = isJeparaCity(cityController.text);
+    isCodAvailable.value = available;
+
+    if (!available && paymentMethod.value == 'cod') {
+      paymentMethod.value = 'bank_transfer';
+    }
+  }
+
+  static int calculateDiscountAmount(String code, int subtotal) {
+    if (code.trim().isEmpty) return 0;
+
+    final normalized = code.trim().toUpperCase();
+    final match = RegExp(r'(\d{1,3})').firstMatch(normalized);
+
+    if (match == null) return 0;
+
+    final percentage = int.tryParse(match.group(1) ?? '') ?? 0;
+
+    if (percentage <= 0 || percentage > 100) return 0;
+
+    return ((subtotal * percentage) / 100).round();
+  }
+
+  static int calculateDiscountTotal(List<String> codes, int subtotal) {
+    return codes.fold<int>(
+      0,
+      (sum, code) => sum + calculateDiscountAmount(code, subtotal),
+    );
+  }
+
+  static bool _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  static String _firstAvailableString(
+    Map<String, dynamic> source,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = source[key];
+      if (value == null) continue;
+      if (value is bool) continue;
+      if (value is Map) {
+        final nested = _firstAvailableString(
+          Map<String, dynamic>.from(value),
+          keys,
+        );
+        if (nested.isNotEmpty) return nested;
+        continue;
+      }
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
+  static bool isCodUnavailableForResponse(Map<String, dynamic>? data) {
+    if (data == null) return false;
+
+    final dynamic coverageValue =
+        data['cod_coverage'] ??
+        data['cod_allowed'] ??
+        data['is_cod_available'] ??
+        data['cod_service_available'] ??
+        data['cod_available'] ??
+        data['delivery_coverage'] ??
+        data['shipping_coverage'];
+
+    if (coverageValue != null) {
+      if (coverageValue is Map) {
+        final nestedCod =
+            coverageValue['cod'] ?? coverageValue['cash_on_delivery'];
+        if (nestedCod != null) {
+          if (!_asBool(nestedCod)) return true;
+        }
+      } else if (!_asBool(coverageValue)) {
+        return true;
+      }
+    }
+
+    final String message = (data['message'] ?? data['error'] ?? '').toString();
+    final lowered = message.toLowerCase();
+
+    return lowered.contains('diluar jangkauan') ||
+        lowered.contains('outside coverage') ||
+        lowered.contains('cod tidak tersedia') ||
+        lowered.contains('cod unavailable') ||
+        lowered.contains('area tidak tersedia untuk cod');
   }
 
   // =========================================================================
@@ -121,6 +249,7 @@ class CheckoutController extends GetxController {
     if (items.isEmpty) {
       promoDiscountAmount.value = 0;
       voucherDiscountAmount.value = 0;
+      freeItemRewards.clear();
       discount.value = 0;
       totalPrice.value = subtotal;
 
@@ -155,6 +284,7 @@ class CheckoutController extends GetxController {
     if (mappedItems.isEmpty) {
       promoDiscountAmount.value = 0;
       voucherDiscountAmount.value = 0;
+      freeItemRewards.clear();
       discount.value = 0;
       totalPrice.value = subtotal;
 
@@ -199,6 +329,7 @@ class CheckoutController extends GetxController {
       if (response == null) {
         promoDiscountAmount.value = 0;
         voucherDiscountAmount.value = 0;
+        freeItemRewards.clear();
         discount.value = 0;
         totalPrice.value = subtotal;
 
@@ -242,6 +373,8 @@ class CheckoutController extends GetxController {
           ? List.from(data['applied_promotions'])
           : [];
 
+      final freeItems = <String>{};
+
       int promoDiscount = 0;
 
       int voucherDiscount = 0;
@@ -261,10 +394,39 @@ class CheckoutController extends GetxController {
             .toString()
             .toLowerCase();
 
+        final String freeItemName =
+            _firstAvailableString(Map<String, dynamic>.from(entry), [
+              'free_item_name',
+              'free_item',
+              'item_name',
+              'product_name',
+              'reward_name',
+              'reward_product_name',
+              'free_product_name',
+              'gift_item_name',
+              'gift_product_name',
+              'reward_product',
+              'name',
+            ]);
+
         final amount =
             (entry['discount_amount'] as num?)?.toInt() ??
             (entry['amount'] as num?)?.toInt() ??
             0;
+
+        final bool isFreeItem =
+            rewardType.contains('free_item') ||
+            rewardType.contains('free item') ||
+            rewardType.contains('gift') ||
+            (entry['free_item'] == true || entry['is_free_item'] == true) ||
+            (type.contains('free_item') || type.contains('free item'));
+
+        if (isFreeItem) {
+          if (freeItemName.isNotEmpty) {
+            freeItems.add(freeItemName);
+          }
+          continue;
+        }
 
         final bool isVoucher =
             type.contains('voucher') ||
@@ -287,6 +449,66 @@ class CheckoutController extends GetxController {
           promoDiscount += amount;
         }
       }
+
+      for (final key in ['free_item_rewards', 'free_items', 'gift_items']) {
+        final value = data[key];
+        if (value is List) {
+          for (final item in value) {
+            if (item is Map) {
+              final name =
+                  _firstAvailableString(Map<String, dynamic>.from(item), [
+                    'free_item_name',
+                    'free_item',
+                    'item_name',
+                    'product_name',
+                    'reward_name',
+                    'reward_product_name',
+                    'free_product_name',
+                    'gift_item_name',
+                    'gift_product_name',
+                    'reward_product',
+                    'name',
+                  ]);
+              if (name.isNotEmpty) freeItems.add(name);
+            } else if (item is String && item.trim().isNotEmpty) {
+              freeItems.add(item.trim());
+            }
+          }
+        } else if (value is Map) {
+          final name = _firstAvailableString(Map<String, dynamic>.from(value), [
+            'free_item_name',
+            'free_item',
+            'item_name',
+            'product_name',
+            'reward_name',
+            'reward_product_name',
+            'free_product_name',
+            'gift_item_name',
+            'gift_product_name',
+            'reward_product',
+            'name',
+          ]);
+          if (name.isNotEmpty) freeItems.add(name);
+        } else if (value is String && value.trim().isNotEmpty) {
+          freeItems.add(value.trim());
+        }
+      }
+
+      if (freeItems.isEmpty) {
+        for (final promotion in promotions) {
+          if (!promoCodes.contains(promotion.code) || !promotion.isFreeItem) {
+            continue;
+          }
+
+          freeItems.add(
+            promotion.freeItemName.isNotEmpty
+                ? promotion.freeItemName
+                : promotion.name,
+          );
+        }
+      }
+
+      freeItemRewards.value = freeItems.toList();
       // =====================================================================
       // AMBIL GRAND TOTAL DARI BACKEND
       // =====================================================================
@@ -353,6 +575,8 @@ class CheckoutController extends GetxController {
       promoDiscountAmount.value = 0;
 
       voucherDiscountAmount.value = 0;
+
+      freeItemRewards.clear();
 
       discount.value = 0;
 
@@ -716,6 +940,8 @@ class CheckoutController extends GetxController {
     regionController.text = (user["region"] ?? "").toString();
 
     subregionController.text = (user["subregion"] ?? "").toString();
+
+    refreshCodAvailability();
   }
 
   // =========================================================================
@@ -798,6 +1024,18 @@ class CheckoutController extends GetxController {
       return;
     }
 
+    refreshCodAvailability();
+
+    if (paymentMethod.value == 'cod' && !isCodAvailable.value) {
+      paymentMethod.value = 'bank_transfer';
+      Get.snackbar(
+        'COD Tidak Tersedia',
+        'COD hanya tersedia untuk alamat di kota Jepara. Silakan pilih pembayaran lain.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     isLoading.value = true;
 
     try {
@@ -829,6 +1067,27 @@ class CheckoutController extends GetxController {
 
       if (result == null) {
         throw Exception('Transaksi gagal dibuat.');
+      }
+
+      final transactionId = (result["transaction_id"] ?? result["id"])
+          ?.toString();
+      if (transactionId != null &&
+          transactionId.isNotEmpty &&
+          freeItemRewards.isNotEmpty) {
+        await box.write(
+          "transaction_free_items_$transactionId",
+          freeItemRewards.toList(),
+        );
+      }
+
+      if (paymentMethod.value == 'cod' && isCodUnavailableForResponse(result)) {
+        paymentMethod.value = 'bank_transfer';
+        Get.snackbar(
+          'COD Tidak Tersedia',
+          'Metode COD tidak tersedia untuk area pengiriman ini. Silakan pilih pembayaran lain.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
       }
 
       // =====================================================================
@@ -866,13 +1125,13 @@ class CheckoutController extends GetxController {
 
       final String? redirectUrl = result["redirect_url"] as String?;
 
-      final String? transactionId = (result["transaction_id"] ?? result["id"])
-          ?.toString();
+      final String? paymentTransactionId =
+          (result["transaction_id"] ?? result["id"])?.toString();
 
-      if (redirectUrl != null && transactionId != null) {
+      if (redirectUrl != null && paymentTransactionId != null) {
         Get.to(() => PaymentWebViewPage(url: redirectUrl));
 
-        _startStatusChecking(transactionId, result, showDialog: false);
+        _startStatusChecking(paymentTransactionId, result, showDialog: false);
 
         Get.snackbar(
           'Pembayaran',
