@@ -152,7 +152,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           // =====================================================
                           // PRODUK
                           // =====================================================
-                          _ProductListCard(items: _items),
+                          _ProductListCard(
+                            items: _items,
+                            freeItems: _checkout.freeItemRewards,
+                          ),
 
                           const _CheckoutSectionDivider(),
 
@@ -415,8 +418,9 @@ class _ShippingAddressCard extends StatelessWidget {
 
 class _ProductListCard extends StatelessWidget {
   final List<CartItem> items;
+  final List<String> freeItems;
 
-  const _ProductListCard({required this.items});
+  const _ProductListCard({required this.items, required this.freeItems});
 
   String _formatRupiah(int price) {
     return NumberFormat.currency(
@@ -442,6 +446,41 @@ class _ProductListCard extends StatelessWidget {
           const Center(child: Text('Tidak ada item yang dipilih.'))
         else
           ...items.map(_itemTile),
+
+        if (freeItems.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.card_giftcard, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text(
+                      'Gratis dari promo',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...freeItems.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $item'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -545,33 +584,55 @@ class _PaymentMethodCard extends StatelessWidget {
             return const Text('Tidak ada metode pembayaran yang tersedia.');
           }
 
+          final codUnavailable = !checkout.isCodAvailable.value;
+
           return Column(
-            children: checkout.methods.map((method) {
-              final String value = method['value'] ?? '';
+            children: [
+              ...checkout.methods.map((method) {
+                final String value = method['value'] ?? '';
 
-              final String label = method['label'] ?? '';
+                final String label = method['label'] ?? '';
 
-              final bool isSelected = checkout.paymentMethod.value == value;
+                final bool isSelected = checkout.paymentMethod.value == value;
+                final bool isCod = value == 'cod';
+                final bool disabled = isCod && codUnavailable;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
 
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isSelected ? Colors.green : Colors.grey.shade300,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: isSelected ? Colors.green : Colors.grey.shade300,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
 
-                child: RadioListTile<String>(
-                  activeColor: Colors.green,
-                  title: Text(label),
-                  value: value,
-                  groupValue: checkout.paymentMethod.value,
-                  onChanged: checkout.changeMethod,
+                  child: RadioListTile<String>(
+                    activeColor: Colors.green,
+                    title: Text(
+                      disabled ? '$label (khusus kota Jepara)' : label,
+                      style: TextStyle(
+                        color: disabled ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                    value: value,
+                    groupValue: checkout.paymentMethod.value,
+                    onChanged: disabled ? null : checkout.changeMethod,
+                  ),
+                );
+              }),
+              if (codUnavailable)
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 12, bottom: 4),
+                    child: Text(
+                      'COD hanya tersedia untuk alamat di kota Jepara.',
+                      style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ),
                 ),
-              );
-            }).toList(),
+            ],
           );
         }),
       ],
@@ -1007,6 +1068,62 @@ class _SummaryCard extends StatelessWidget {
             format: format,
             isDiscount: true,
           ),
+
+          Obx(() {
+            if (checkout.freeItemRewards.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Hadiah Gratis',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...checkout.freeItemRewards.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.card_giftcard,
+                            size: 14,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.green,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
 
           const Divider(height: 24, thickness: 1),
 

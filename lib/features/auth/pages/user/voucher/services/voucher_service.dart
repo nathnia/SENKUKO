@@ -10,9 +10,7 @@ class VoucherService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/vouchers'),
-        headers: {
-          "Accept": "application/json",
-        },
+        headers: {"Accept": "application/json"},
       );
 
       if (response.statusCode != 200) {
@@ -26,7 +24,7 @@ class VoucherService {
 
       return data
           .map((e) => VoucherModel.fromJson(e))
-          .where((e) => e.isValidNow)
+          .where((e) => e.isPublic && e.isValidNow)
           .toList();
     } catch (e) {
       print("Voucher Error : $e");

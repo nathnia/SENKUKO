@@ -231,49 +231,51 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   constraints: const BoxConstraints(maxWidth: 960),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Halo, $memberName 👋",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  const SizedBox(height: 14),
-
-                  Row(
                     children: [
-                      Expanded(
-                        child: Container(
-                          height: 50,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.card,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                      Text(
+                        "Halo, $memberName 👋",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
 
-                          child: GestureDetector(
-                            onTap: () {
-                              Get.to(() => const SearchProductPage());
-                            },
+                      const SizedBox(height: 4),
 
-                            child: AbsorbPointer(
-                              child: AppTextField(
-                                controller: searchController,
-                                hint: "Cari produk...",
-                                icon: Icons.search,
+                      const SizedBox(height: 14),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 50,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.card,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+
+                              child: GestureDetector(
+                                onTap: () {
+                                  Get.to(() => const SearchProductPage());
+                                },
+
+                                child: AbsorbPointer(
+                                  child: AppTextField(
+                                    controller: searchController,
+                                    hint: "Cari produk...",
+                                    icon: Icons.search,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
-                  ),
-                  ],
                   ),
                 ),
               ),
@@ -289,148 +291,159 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
 
-                        children: [
-                          const SizedBox(height: 16),
+                            children: [
+                              const SizedBox(height: 16),
 
-                          // BANNER
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final bannerHeight =
-                                    (constraints.maxWidth * .36)
-                                        .clamp(180.0, 260.0)
-                                        .toDouble();
+                              // BANNER
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final bannerHeight =
+                                        (constraints.maxWidth * .36)
+                                            .clamp(180.0, 260.0)
+                                            .toDouble();
 
-                                return SizedBox(
-                              height: bannerHeight,
-                              child: bannerList.isEmpty
-                                  ? _emptyBanner()
-                                  : Stack(
-                                      children: [
-                                        PageView.builder(
-                                          controller: controller,
-                                          itemCount: bannerList.length,
-                                          onPageChanged: (index) {
-                                            setState(() {
-                                              currentPage = index;
-                                            });
-                                          },
-                                          itemBuilder: (_, index) {
-                                            return banner(index);
-                                          },
-                                        ),
-
-                                        Positioned(
-                                          bottom: 14,
-                                          left: 0,
-                                          right: 0,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: List.generate(
-                                              bannerList.length,
-                                              (index) => AnimatedContainer(
-                                                duration: const Duration(
-                                                  milliseconds: 250,
+                                    return SizedBox(
+                                      height: bannerHeight,
+                                      child: bannerList.isEmpty
+                                          ? _emptyBanner()
+                                          : Stack(
+                                              children: [
+                                                PageView.builder(
+                                                  controller: controller,
+                                                  itemCount: bannerList.length,
+                                                  onPageChanged: (index) {
+                                                    setState(() {
+                                                      currentPage = index;
+                                                    });
+                                                  },
+                                                  itemBuilder: (_, index) {
+                                                    return banner(index);
+                                                  },
                                                 ),
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 3,
+
+                                                Positioned(
+                                                  bottom: 14,
+                                                  left: 0,
+                                                  right: 0,
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: List.generate(
+                                                      bannerList.length,
+                                                      (
+                                                        index,
+                                                      ) => AnimatedContainer(
+                                                        duration:
+                                                            const Duration(
+                                                              milliseconds: 250,
+                                                            ),
+                                                        margin:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 3,
+                                                            ),
+                                                        height: 8,
+                                                        width:
+                                                            currentPage == index
+                                                            ? 22
+                                                            : 8,
+                                                        decoration: BoxDecoration(
+                                                          color:
+                                                              currentPage ==
+                                                                  index
+                                                              ? Colors.white
+                                                              : Colors.white54,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                20,
+                                                              ),
+                                                        ),
+                                                      ),
                                                     ),
-                                                height: 8,
-                                                width: currentPage == index
-                                                    ? 22
-                                                    : 8,
-                                                decoration: BoxDecoration(
-                                                  color: currentPage == index
-                                                      ? Colors.white
-                                                      : Colors.white54,
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
+                                                  ),
                                                 ),
-                                              ),
+                                              ],
                                             ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                );
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // CATEGORY
-                          SizedBox(
-                            height: 100,
-
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                                    );
+                                  },
+                                ),
                               ),
 
-                              itemCount: categories.length,
+                              const SizedBox(height: 20),
 
-                              itemBuilder: (context, index) {
-                                final icons = [
-                                  Icons.apps,
-                                  Icons.fastfood,
-                                  Icons.child_friendly,
-                                  Icons.edit_note,
-                                  Icons.chair,
-                                  Icons.face,
-                                  Icons.shopping_basket,
-                                  Icons.storefront,
-                                ];
+                              // CATEGORY
+                              SizedBox(
+                                height: 100,
 
-                                return categoryItem(
-                                  categories[index],
-                                  icons[index],
-                                );
-                              },
-                            ),
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+
+                                  itemCount: categories.length,
+
+                                  itemBuilder: (context, index) {
+                                    final icons = [
+                                      Icons.apps,
+                                      Icons.fastfood,
+                                      Icons.child_friendly,
+                                      Icons.edit_note,
+                                      Icons.chair,
+                                      Icons.face,
+                                      Icons.shopping_basket,
+                                      Icons.storefront,
+                                    ];
+
+                                    return categoryItem(
+                                      categories[index],
+                                      icons[index],
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              AppSectionTitle(
+                                title: "Produk Baru",
+
+                                onTap: () {
+                                  Get.to(() => const ProductListPage());
+                                },
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              productList(newProducts),
+
+                              const SizedBox(height: 20),
+
+                              AppSectionTitle(
+                                title: "Voucher",
+
+                                onTap: () {
+                                  Get.to(() => const VoucherPage());
+                                },
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              SizedBox(
+                                height: 190,
+
+                                child: const VoucherPage(isHome: true),
+                              ),
+                              const SizedBox(height: 90),
+                            ],
                           ),
-
-                          const SizedBox(height: 20),
-
-                          AppSectionTitle(
-                            title: "Produk Baru",
-
-                            onTap: () {
-                              Get.to(() => const ProductListPage());
-                            },
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          productList(newProducts),
-
-                          const SizedBox(height: 20),
-
-                          AppSectionTitle(
-                            title: "Voucher",
-
-                            onTap: () {
-                              Get.to(() => const VoucherPage());
-                            },
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          SizedBox(
-                            height: 190,
-
-                            child: const VoucherPage(isHome: true),
-                          ),
-                          const SizedBox(height: 90),
-                          ],
                         ),
                       ),
-                    ),
                     ),
             ),
           ],
@@ -443,48 +456,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // CATEGORY
   // -------------------------------------------------------------------------
 
-  Widget categoryItem(String category, IconData icon) {
-    return GestureDetector(
-      onTap: () {
-        if (category == "Semua") {
-          Get.to(() => const ProductListPage());
-        } else {
-          Get.to(() => CategoryProductsPage(category: category));
-        }
-      },
-
-      child: SizedBox(
-        width: 80,
-
-        child: Column(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(20),
-                borderRadius: BorderRadius.circular(18),
-              ),
-
-              child: Icon(icon, color: AppColors.primary, size: 26),
+Widget categoryItem(String category, IconData icon) {
+  return GestureDetector(
+    onTap: () {
+      if (category == "Semua") {
+        Get.to(() => const ProductListPage());
+      } else {
+        Get.to(() => CategoryProductsPage(category: category));
+      }
+    },
+    child: SizedBox(
+      width: 80,
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(20),
+              borderRadius: BorderRadius.circular(18),
             ),
-
-            const SizedBox(height: 6),
-
-            Text(
-              category,
+            child: Icon(
+              icon,
+              color: AppColors.primary,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 80,
+            child: Text(
+              _formatCategoryLabel(category), // <-- diubah di sini
               textAlign: TextAlign.center,
               maxLines: 2,
+              softWrap: true,
               overflow: TextOverflow.ellipsis,
-
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
+    ),
+  );
+}
+
+// Pecah jadi 2 baris kalau ada 2 kata, biar konsisten kayak "Rumah\nTangga"
+String _formatCategoryLabel(String category) {
+  final words = category.split(' ');
+  if (words.length == 2) {
+    return '${words[0]}\n${words[1]}';
   }
+  return category; // biarkan wrap otomatis kalau kata cuma 1 atau lebih dari 2
+}
   // -------------------------------------------------------------------------
   // PRODUCT CARD
   // -------------------------------------------------------------------------
@@ -578,7 +605,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
             ),
-
           ],
         ),
       ),

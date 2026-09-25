@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:senkuko/features/auth/pages/user/history/services/history_service.dart';
 
 class TransactionDetailController extends GetxController {
@@ -19,10 +20,7 @@ class TransactionDetailController extends GetxController {
     if (id == null) {
       isLoading.value = false;
 
-      Get.snackbar(
-        "Error",
-        "ID transaksi tidak ditemukan.",
-      );
+      Get.snackbar("Error", "ID transaksi tidak ditemukan.");
 
       return;
     }
@@ -51,15 +49,20 @@ class TransactionDetailController extends GetxController {
       print("==================================");
 
       if (result == null) {
-        Get.snackbar(
-          "Error",
-          "Data transaksi tidak ditemukan.",
-        );
+        Get.snackbar("Error", "Data transaksi tidak ditemukan.");
 
         return;
       }
 
-      detail.value = result;
+      final transaction = Map<String, dynamic>.from(result);
+      final storedFreeItems = GetStorage().read<List<dynamic>>(
+        "transaction_free_items_$id",
+      );
+      if (storedFreeItems != null && storedFreeItems.isNotEmpty) {
+        transaction["free_item_rewards"] = storedFreeItems;
+      }
+
+      detail.value = transaction;
     } catch (e, stackTrace) {
       print("==================================");
       print("DETAIL ERROR");
@@ -67,10 +70,7 @@ class TransactionDetailController extends GetxController {
       print(stackTrace);
       print("==================================");
 
-      Get.snackbar(
-        "Error",
-        "Gagal mengambil detail transaksi.",
-      );
+      Get.snackbar("Error", "Gagal mengambil detail transaksi.");
     } finally {
       isLoading.value = false;
     }
@@ -87,10 +87,7 @@ class TransactionDetailController extends GetxController {
       number = double.tryParse(value.toString()) ?? 0;
     }
 
-    return "Rp ${number.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => "${m[1]}.",
-        )}";
+    return "Rp ${number.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => "${m[1]}.")}";
   }
 
   // ============================================================
@@ -187,8 +184,7 @@ class TransactionDetailController extends GetxController {
         ?.toString()
         .toLowerCase();
 
-    return status == "pending_payment" &&
-        paymentStatus == "pending";
+    return status == "pending_payment" && paymentStatus == "pending";
   }
 
   // ============================================================
@@ -199,10 +195,7 @@ class TransactionDetailController extends GetxController {
     final transaction = detail.value;
 
     if (transaction == null) {
-      Get.snackbar(
-        "Error",
-        "Data transaksi tidak ditemukan.",
-      );
+      Get.snackbar("Error", "Data transaksi tidak ditemukan.");
 
       return;
     }
@@ -210,10 +203,7 @@ class TransactionDetailController extends GetxController {
     final transactionId = transaction["id"]?.toString();
 
     if (transactionId == null || transactionId.isEmpty) {
-      Get.snackbar(
-        "Error",
-        "ID transaksi tidak ditemukan.",
-      );
+      Get.snackbar("Error", "ID transaksi tidak ditemukan.");
 
       return;
     }
@@ -230,9 +220,7 @@ class TransactionDetailController extends GetxController {
     try {
       isLoading.value = true;
 
-      final result = await HistoryService.cancelTransaction(
-        transactionId,
-      );
+      final result = await HistoryService.cancelTransaction(transactionId);
 
       if (result == null) {
         Get.snackbar(
@@ -262,9 +250,7 @@ class TransactionDetailController extends GetxController {
       // Kita gabungkan response cancel dengan detail lama.
       // ============================================================
 
-      final currentDetail = Map<String, dynamic>.from(
-        detail.value!,
-      );
+      final currentDetail = Map<String, dynamic>.from(detail.value!);
 
       currentDetail.addAll(result);
 
